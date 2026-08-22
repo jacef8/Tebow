@@ -315,7 +315,10 @@
           Six nodes orbit the core, each its own Claude session with its own memory.<br><br>
           Click a node to focus it. Type or tap the core to speak.
           <b>Broadcast all</b> fires the same question at every node at once —
-          six answers, six angles, in parallel.
+          six answers, six angles, in parallel.<br><br>
+          The core sphere is split into six wedges, one per node. A wedge
+          takes on its node's color and widens as that node carries more
+          of the conversation.
         </div>
       </div>
     </div>
@@ -352,7 +355,7 @@
   ];
   const NN = SESSIONS.length;
   SESSIONS.forEach(function(s,i){
-    s.history=[]; s.state="idle"; s.busy=false; s.el=null;
+    s.history=[]; s.state="idle"; s.busy=false; s.el=null; s.words=0;
     s.num = String(i+1).padStart(2,"0");
     s.name = "THREAD "+s.num;
     s.titled = false;
@@ -404,25 +407,55 @@
   }
   const tex=sprite();
 
+  /* neutral sprite — the warm one above multiplies vertex colors and
+     strips their blue, so wedge/cluster hues would never survive it */
+  function spriteN(){
+    const c=document.createElement("canvas"); c.width=c.height=64;
+    const x=c.getContext("2d");
+    const g=x.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,"rgba(255,255,255,1)");
+    g.addColorStop(0.25,"rgba(255,255,255,.85)");
+    g.addColorStop(1,"rgba(255,255,255,0)");
+    x.fillStyle=g;x.beginPath();x.arc(32,32,32,0,7);x.fill();
+    return new THREE.CanvasTexture(c);
+  }
+  const texN=spriteN();
+
   /* ── core lattice ── */
   const CN=6000, R=2.15;
   const cdir=new Float32Array(CN*3), cseed=new Float32Array(CN);
-  const cbin=new Int16Array(CN);
+  const cbin=new Int16Array(CN), clonF=new Float32Array(CN);
   const cpos=new Float32Array(CN*3), ccol=new Float32Array(CN*3);
-  const GOLD=2.399963229728653;
+  const GOLD=2.399963229728653, TAU=Math.PI*2;
   for(let i=0;i<CN;i++){
     const y=1-(i/(CN-1))*2, rad=Math.sqrt(Math.max(0,1-y*y)), th=GOLD*i;
     const x=Math.cos(th)*rad, z=Math.sin(th)*rad;
     cdir[i*3]=x;cdir[i*3+1]=y;cdir[i*3+2]=z;
     cseed[i]=Math.random();
-    let lon=Math.atan2(z,x); if(lon<0)lon+=Math.PI*2;
-    cbin[i]=Math.floor(lon/(Math.PI*2)*NB)%NB;
+    let lon=Math.atan2(z,x); if(lon<0)lon+=TAU;
+    cbin[i]=Math.floor(lon/TAU*NB)%NB;
+    clonF[i]=lon/TAU;
+  }
+
+  /* ── live sections: one wedge of the core per thread ──
+     A wedge's angular width tracks its thread's share of the real
+     conversation — turns held plus words received. Idle threads share
+     the sphere evenly; a wedge widens, claiming more of the lattice,
+     as its thread does more of the work. Particles never move — the
+     boundaries sweep across them, so density stays uniform. */
+  const secW=new Float32Array(NN), secStart=new Float32Array(NN);
+  for(let i=0;i<NN;i++) secW[i]=1/NN;
+  function sectionShares(){
+    let tot=0;
+    const w=SESSIONS.map(function(s){ return 1 + s.history.length/2 + s.words/120; });
+    w.forEach(function(v){ tot+=v; });
+    return w.map(function(v){ return v/tot; });
   }
   const cgeo=new THREE.BufferGeometry();
   cgeo.setAttribute("position",new THREE.BufferAttribute(cpos,3));
   cgeo.setAttribute("color",new THREE.BufferAttribute(ccol,3));
   const core=new THREE.Points(cgeo,new THREE.PointsMaterial({
-    size:0.048,map:tex,vertexColors:true,transparent:true,
+    size:0.048,map:texN,vertexColors:true,transparent:true,
     blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
   scene.add(core);
 
@@ -475,7 +508,7 @@
     g.setAttribute("position",new THREE.BufferAttribute(p,3));
     g.setAttribute("color",new THREE.BufferAttribute(c,3));
     s.pts=new THREE.Points(g,new THREE.PointsMaterial({
-      size:0.055,map:tex,vertexColors:true,transparent:true,
+      size:0.055,map:texN,vertexColors:true,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
     s.p=p; s.c=c; s.d=d; s.sd=sd; s.g=g;
     scene.add(s.pts);
@@ -521,15 +554,29 @@
     for(let i=0;i<NB;i++) bins[i]=lerp(bins[i],targ[i], targ[i]>bins[i]?0.55:0.10);
     let mean=0; for(let i=0;i<NB;i++) mean+=bins[i]; mean/=NB;
 
-    /* core lattice */
+    /* section widths follow live thread activity */
+    const shares=sectionShares();
+    let secTot=0;
+    for(let i=0;i<NN;i++){ secW[i]=lerp(secW[i],shares[i],0.04); secTot+=secW[i]; }
+    let accW=0;
+    for(let i=0;i<NN;i++){ secStart[i]=accW/secTot; accW+=secW[i]; }
+
+    /* core lattice — each particle colored by the thread whose wedge holds it */
     for(let i=0;i<CN;i++){
+      const u=clonF[i];
+      let si=NN-1;
+      for(let s2=1;s2<NN;s2++){ if(u<secStart[s2]){ si=s2-1; break; } }
+      const S=SESSIONS[si];
       const b=bins[cbin[i]];
-      const rr=R*(1+b*0.44+Math.sin(t*1.7+cseed[i]*40)*0.020+mean*0.05);
+      const rr=R*(1+b*0.44+Math.sin(t*1.7+cseed[i]*40)*0.020+mean*0.05+S.pulse*0.05);
       const k=i*3;
       cpos[k]=cdir[k]*rr; cpos[k+1]=cdir[k+1]*rr; cpos[k+2]=cdir[k+2]*rr;
       const e=Math.min(1,b*1.55+0.12);
       const f=0.30+e*0.95+cseed[i]*0.12;
-      ccol[k]=1.0*f; ccol[k+1]=(0.42+e*0.46)*f; ccol[k+2]=(0.06+e*0.55)*f;
+      const mix=Math.min(1,0.70+(S.focusE||0)*0.18+S.pulse*0.12);
+      ccol[k]  =lerp(1.0*f,          S.rgb[0]*f*1.45, mix);
+      ccol[k+1]=lerp((0.42+e*0.46)*f,S.rgb[1]*f*1.45, mix);
+      ccol[k+2]=lerp((0.06+e*0.55)*f,S.rgb[2]*f*1.45, mix);
     }
     cgeo.attributes.position.needsUpdate=true;
     cgeo.attributes.color.needsUpdate=true;
@@ -662,8 +709,10 @@
   });
 
   function paintState(){
+    const shares=sectionShares();
     SESSIONS.forEach(function(s,i){
-      const st = s.busy ? "working" : (s.history.length? (s.history.length/2)+" turns" : "idle");
+      const pct=Math.round(shares[i]*100);
+      const st = s.busy ? "working" : (s.history.length? (s.history.length/2)+" turns · "+pct+"%" : "idle");
       s.row.querySelector(".st").textContent=st;
       s.row.classList.toggle("focus", i===focusIdx);
       s.row.classList.toggle("busy", s.busy);
@@ -1127,7 +1176,8 @@
       if(!out) throw new Error("empty");
       s.history.push({role:"assistant",content:out});
       lastLat=Date.now()-s.t0;
-      words+=out.split(/\s+/).filter(Boolean).length;
+      const wN=out.split(/\s+/).filter(Boolean).length;
+      words+=wN; s.words+=wN;
       exchanges++;
       s.busy=false; paintState();
       if(s===SESSIONS[focusIdx]) render();
@@ -1174,7 +1224,7 @@
   });
 
   purge.addEventListener("click",function(){
-    SESSIONS.forEach(function(s){ s.history=[]; s.error=null; });
+    SESSIONS.forEach(function(s){ s.history=[]; s.error=null; s.words=0; });
     stopSpeaking(); caption("");
     paintState(); render(); setMode("idle","STANDBY"); input.focus();
   });
