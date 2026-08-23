@@ -127,7 +127,7 @@
   .rrow.busy .st{color:var(--gold);}
 
   .core{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:0;padding-bottom:6px;}
-  .hit{width:min(40vh,260px);height:min(40vh,260px);border-radius:50%;cursor:pointer;flex:0 0 auto;}
+  .hit{width:min(48vh,330px);height:min(48vh,330px);border-radius:50%;cursor:pointer;flex:0 0 auto;}
   .hit:focus-visible{outline:2px solid var(--gold);outline-offset:8px;}
   .mode{
     font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.36em;
@@ -411,7 +411,7 @@
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   const scene=new THREE.Scene();
   const cam=new THREE.PerspectiveCamera(48,1,0.1,200);
-  cam.position.set(0,1.5,11.5);
+  cam.position.set(0,1.5,9.2);
   function resize(){
     renderer.setSize(innerWidth,innerHeight,false);
     cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix();
@@ -445,7 +445,7 @@
   const texN=spriteN();
 
   /* ── core lattice ── */
-  const CN=6000, R=2.15;
+  const CN=6000, R=2.4;
   const cdir=new Float32Array(CN*3), cseed=new Float32Array(CN);
   const cbin=new Int16Array(CN), clonF=new Float32Array(CN);
   const cpos=new Float32Array(CN*3), ccol=new Float32Array(CN*3);
@@ -478,7 +478,7 @@
   cgeo.setAttribute("position",new THREE.BufferAttribute(cpos,3));
   cgeo.setAttribute("color",new THREE.BufferAttribute(ccol,3));
   const core=new THREE.Points(cgeo,new THREE.PointsMaterial({
-    size:0.048,map:texN,vertexColors:true,transparent:true,
+    size:0.056,map:texN,vertexColors:true,transparent:true,
     blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
   scene.add(core);
 
@@ -510,6 +510,17 @@
     wires.add(ln);
   }
   scene.add(wires);
+
+  /* ── gyro rings — two bright gimbal hoops tumbling around the core ── */
+  function hoop(r,color,op){
+    const pts=[];
+    for(let a=0;a<=96;a++){const th=a/96*TAU;pts.push(new THREE.Vector3(Math.cos(th)*r,Math.sin(th)*r,0));}
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:color,transparent:true,opacity:op,blending:THREE.AdditiveBlending}));
+  }
+  const gyroA=hoop(R*1.16,0xFFB040,0.34);
+  const gyroB=hoop(R*1.30,0xFF8A1E,0.26);
+  scene.add(gyroA); scene.add(gyroB);
 
   /* ── core glow ── */
   const coreMat=new THREE.SpriteMaterial({map:tex,color:0xFFF0CC,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -574,6 +585,11 @@
 
   function frame(){
     t+=0.016;
+    /* idle: a slow ripple rolls around the sphere instead of a flat rest */
+    if(mode==="idle"){
+      for(let i=0;i<NB;i++)
+        targ[i]=0.055+0.045*Math.sin(t*1.1+i*0.22)*Math.sin(t*0.53+i*0.07);
+    }
     for(let i=0;i<NB;i++) bins[i]=lerp(bins[i],targ[i], targ[i]>bins[i]?0.55:0.10);
     let mean=0; for(let i=0;i<NB;i++) mean+=bins[i]; mean/=NB;
 
@@ -650,14 +666,17 @@
     wires.rotation.y-=0.0010; wires.rotation.z=Math.sin(t*0.28)*0.06;
     disc.rotation.z+=0.0008;
 
+    gyroA.rotation.x=t*0.42; gyroA.rotation.y=t*0.31;
+    gyroB.rotation.x=-t*0.27; gyroB.rotation.z=t*0.36;
+
     const beat=1+mean*0.72+Math.sin(t*1.5)*0.05;
-    coreS.scale.set(2.0*beat,2.0*beat,1);
-    halo.scale.set(5.9*beat,5.9*beat,1);
+    coreS.scale.set(2.25*beat,2.25*beat,1);
+    halo.scale.set(6.6*beat,6.6*beat,1);
     haloMat.opacity=0.36+mean*0.44;
 
     const orbit=t*0.035;
-    cam.position.x=Math.sin(orbit)*11.5;
-    cam.position.z=Math.cos(orbit)*11.5;
+    cam.position.x=Math.sin(orbit)*9.2;
+    cam.position.z=Math.cos(orbit)*9.2;
     cam.position.y=1.6+Math.sin(t*0.20)*0.85;
     cam.lookAt(0,0,0);
 
@@ -1000,14 +1019,20 @@
 
   /* ══════════ mic ══════════ */
   let actx=null,anl=null,stream=null,timer=null,freq=null;
+  /* The mic stream is opened once and held for the whole session —
+     releasing and re-requesting it on every listen makes the browser
+     re-prompt for permission each time on file:// pages. */
   async function startAmp(){
     try{
       if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
       if(actx.state==="suspended") await actx.resume();
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      const src=actx.createMediaStreamSource(stream);
-      anl=actx.createAnalyser(); anl.fftSize=1024; anl.smoothingTimeConstant=0.45;
-      src.connect(anl); freq=new Uint8Array(anl.frequencyBinCount);
+      if(!stream){
+        stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        const src=actx.createMediaStreamSource(stream);
+        anl=actx.createAnalyser(); anl.fftSize=1024; anl.smoothingTimeConstant=0.45;
+        src.connect(anl); freq=new Uint8Array(anl.frequencyBinCount);
+      }
+      if(timer) clearInterval(timer);
       timer=setInterval(function(){
         anl.getByteFrequencyData(freq);
         for(let i=0;i<NB;i++){
@@ -1020,7 +1045,6 @@
   }
   function stopAmp(){
     if(timer){clearInterval(timer);timer=null;}
-    if(stream){stream.getTracks().forEach(function(x){x.stop();});stream=null;}
     for(let i=0;i<NB;i++) targ[i]=0.05;
   }
 
