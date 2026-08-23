@@ -16,7 +16,7 @@
     --gold:#FFC246;
     --hot:#FFE9B8;
     --txt:#FFE2BC;
-    --dim:#A2724A;
+    --dim:#C08D5F;
     --red:#FF4D6D;
     --mono:'Share Tech Mono',ui-monospace,Menlo,monospace;
     --disp:'Rajdhani','Arial Narrow',sans-serif;
@@ -129,8 +129,9 @@
   .rrow .st{margin-left:auto;font-size:9px;opacity:.8;}
   .rrow.busy .st{color:var(--gold);}
 
-  .core{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:0;padding-bottom:6px;}
-  .hit{width:min(48vh,330px);height:min(48vh,330px);border-radius:50%;cursor:pointer;flex:0 0 auto;}
+  /* the center cell must not swallow clicks meant for the orbs behind it */
+  .core{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:0;padding-bottom:6px;pointer-events:none;}
+  .hit{width:min(48vh,330px);height:min(48vh,330px);border-radius:50%;cursor:pointer;flex:0 0 auto;pointer-events:auto;}
   .hit:focus-visible{outline:2px solid var(--gold);outline-offset:8px;}
   .mode{
     font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.36em;
@@ -155,7 +156,7 @@
   .feed{flex:1 1 auto;min-height:0;overflow-y:auto;font-size:14px;line-height:1.62;scrollbar-width:thin;scrollbar-color:var(--edge) transparent;}
   .feed::-webkit-scrollbar{width:7px;}
   .feed::-webkit-scrollbar-thumb{background:var(--edge);}
-  .empty{color:#C9A176;font-size:13px;line-height:1.7;}
+  .empty{color:#E3C39A;font-size:14px;line-height:1.7;}
   .turn{margin-bottom:15px;}
   .who{font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:4px;}
   .turn.you .who{color:var(--dim);}
@@ -303,9 +304,9 @@
     <div class="pane" style="flex:0 0 auto;">
       <h2 class="ph">Core</h2>
       <div class="dials">
-        <div class="dial"><canvas id="d1" width="120" height="120"></canvas><span>SIG</span></div>
-        <div class="dial"><canvas id="d2" width="120" height="120"></canvas><span>LOAD</span></div>
-        <div class="dial"><canvas id="d3" width="120" height="120"></canvas><span>OPEN</span></div>
+        <div class="dial"><canvas id="d1" width="120" height="120"></canvas><span>MIC</span></div>
+        <div class="dial"><canvas id="d2" width="120" height="120"></canvas><span>BUSY</span></div>
+        <div class="dial"><canvas id="d3" width="120" height="120"></canvas><span>USED</span></div>
       </div>
       <canvas id="wave" width="420" height="104"></canvas>
     </div>
@@ -335,7 +336,7 @@
     </div>
 
     <div class="pane" style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;min-height:84px;">
-      <h2 class="ph">Threads</h2>
+      <h2 class="ph">Chats</h2>
       <div class="roster" id="roster"></div>
     </div>
   </div>
@@ -352,15 +353,16 @@
       <div class="tabs" id="tabs"></div>
       <div class="feed" id="feed" aria-live="polite">
         <div class="empty" id="empty">
-          Six nodes orbit the core, each its own Claude session with its own memory.<br><br>
-          Click a node to focus it. Type or tap the core to speak.
-          <b>Broadcast all</b> fires the same question at every node at once —
-          six answers, six angles, in parallel.<br><br>
-          The core sphere is split into six wedges, one per node. A wedge
-          takes on its node's color and widens as that node carries more
-          of the conversation.<br><br>
-          <b>Wake</b> arms the "hey Tebow" phrase: the mic stays open
-          hands-free but only obeys after you call it.
+          The orb is Tebow. Tap its center and talk — pause when you're
+          done and it answers out loud. Or type in the bar below and
+          press Enter.<br><br>
+          The orb is divided into six colored slices: six separate
+          chats, each with its own memory. Click a slice — or a name in
+          the Chats list — to switch. Questions go to the highlighted
+          chat, and a slice grows as its chat does more of the talking.
+          <b>Ask all</b> asks all six at once.<br><br>
+          <b>Wake</b> keeps the mic on hands-free, but Tebow only obeys
+          after you say "hey Tebow".
         </div>
       </div>
     </div>
@@ -371,7 +373,7 @@
   <div class="cmd">
     <span class="caret" aria-hidden="true">▶</span>
     <label for="input" style="position:absolute;left:-9999px;">Message</label>
-    <input id="input" type="text" autocomplete="off" placeholder="Enter command">
+    <input id="input" type="text" autocomplete="off" placeholder="Type here and press Enter — or tap the orb and speak">
     <span class="target" id="target">→ MAIN</span>
     <button class="chip" id="send">Transmit</button>
   </div>
@@ -399,7 +401,7 @@
   SESSIONS.forEach(function(s,i){
     s.history=[]; s.state="idle"; s.busy=false; s.el=null; s.words=0;
     s.num = String(i+1).padStart(2,"0");
-    s.name = "THREAD "+s.num;
+    s.name = "CHAT "+s.num;
     s.titled = false;
     s.orbR = 4.4 + (i%3)*0.85;
     s.orbI = -0.62 + i*0.24;
@@ -549,47 +551,6 @@
   const haloMat=new THREE.SpriteMaterial({map:tex,color:0xFF7A12,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false});
   const halo=new THREE.Sprite(haloMat); halo.scale.set(6.4,6.4,1); scene.add(halo);
 
-  /* ── session nodes ── */
-  const SP=460;
-  SESSIONS.forEach(function(s){
-    const p=new Float32Array(SP*3), c=new Float32Array(SP*3);
-    const d=new Float32Array(SP*3), sd=new Float32Array(SP);
-    for(let i=0;i<SP;i++){
-      const y=1-(i/(SP-1))*2, rad=Math.sqrt(Math.max(0,1-y*y)), th=GOLD*i;
-      d[i*3]=Math.cos(th)*rad; d[i*3+1]=y; d[i*3+2]=Math.sin(th)*rad;
-      sd[i]=Math.random();
-    }
-    const g=new THREE.BufferGeometry();
-    g.setAttribute("position",new THREE.BufferAttribute(p,3));
-    g.setAttribute("color",new THREE.BufferAttribute(c,3));
-    s.pts=new THREE.Points(g,new THREE.PointsMaterial({
-      size:0.055,map:texN,vertexColors:true,transparent:true,
-      blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
-    s.p=p; s.c=c; s.d=d; s.sd=sd; s.g=g;
-    scene.add(s.pts);
-
-    /* orbit trace */
-    const op=[];
-    for(let a=0;a<=128;a++){
-      const t=a/128*Math.PI*2;
-      op.push(new THREE.Vector3(Math.cos(t)*s.orbR,0,Math.sin(t)*s.orbR));
-    }
-    s.orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(op),
-      new THREE.LineBasicMaterial({color:new THREE.Color(s.rgb[0],s.rgb[1],s.rgb[2]),
-        transparent:true,opacity:0.09,blending:THREE.AdditiveBlending}));
-    s.orbit.rotation.x=s.orbI;
-    scene.add(s.orbit);
-
-    /* tether */
-    s.tether=new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),
-      new THREE.LineBasicMaterial({color:new THREE.Color(s.rgb[0],s.rgb[1],s.rgb[2]),
-        transparent:true,opacity:0.10,blending:THREE.AdditiveBlending}));
-    scene.add(s.tether);
-
-    s.world=new THREE.Vector3();
-  });
-
   /* ── starfield ── */
   const SN=900, spos=new Float32Array(SN*3);
   for(let i=0;i<SN;i++){
@@ -651,36 +612,12 @@
     dgeo.attributes.position.needsUpdate=true;
     dgeo.attributes.color.needsUpdate=true;
 
-    /* nodes */
+    /* chat energy — pulse while working, glow while focused; both feed
+       the wedge coloring above */
     SESSIONS.forEach(function(s,i){
       const busyP = s.busy ? (0.55+Math.abs(Math.sin(t*4.2+i))*0.75) : 0;
       s.pulse = lerp(s.pulse, busyP, 0.12);
-      const foc = (i===focusIdx)?1:0;
-      s.focusE = lerp(s.focusE||0, foc, 0.08);
-
-      const a=s.orbP + t*s.orbS;
-      const x=Math.cos(a)*s.orbR, z=Math.sin(a)*s.orbR;
-      const y=Math.sin(a)*Math.sin(s.orbI)*s.orbR*0.55;
-      s.world.set(x, y, z*Math.cos(s.orbI));
-
-      const nr = 0.40 + s.pulse*0.30 + s.focusE*0.20;
-      for(let j=0;j<SP;j++){
-        const k=j*3;
-        const wob=1+Math.sin(t*2.6+s.sd[j]*30)*(0.06+s.pulse*0.30);
-        s.p[k]  =s.world.x + s.d[k]  *nr*wob;
-        s.p[k+1]=s.world.y + s.d[k+1]*nr*wob;
-        s.p[k+2]=s.world.z + s.d[k+2]*nr*wob;
-        const f=0.30+s.pulse*0.85+s.focusE*0.55+s.sd[j]*0.20;
-        s.c[k]=s.rgb[0]*f; s.c[k+1]=s.rgb[1]*f; s.c[k+2]=s.rgb[2]*f;
-      }
-      s.g.attributes.position.needsUpdate=true;
-      s.g.attributes.color.needsUpdate=true;
-
-      const tp=s.tether.geometry.attributes.position;
-      tp.setXYZ(0,0,0,0); tp.setXYZ(1,s.world.x,s.world.y,s.world.z);
-      tp.needsUpdate=true;
-      s.tether.material.opacity = 0.06 + s.pulse*0.55 + s.focusE*0.22;
-      s.orbit.material.opacity  = 0.06 + s.focusE*0.20 + s.pulse*0.18;
+      s.focusE = lerp(s.focusE||0, (i===focusIdx)?1:0, 0.08);
     });
 
     core.rotation.y+=0.0015; core.rotation.x=Math.sin(t*0.20)*0.09;
@@ -1027,7 +964,7 @@
   function ticker(){
     const bits=[];
     const busyN=SESSIONS.filter(function(x){return x.busy;}).length;
-    bits.push("THREADS <b>"+NN+"</b>");
+    bits.push("CHATS <b>"+NN+"</b>");
     bits.push("ACTIVE <b>"+busyN+"</b>");
     bits.push("FOCUS <b>"+SESSIONS[focusIdx].name+"</b>");
     bits.push("EXCHANGES <b>"+exchanges+"</b>");
@@ -1190,6 +1127,32 @@
     startListen();
   }
   hit.addEventListener("click",toggleListen);
+
+  /* the orb's colored slices are clickable — a click casts a ray at the
+     sphere, converts the hit to the orb's own rotating frame, and picks
+     the chat whose wedge holds that longitude */
+  const ray=new THREE.Raycaster(), rayXY=new THREE.Vector2();
+  const sphV=new THREE.Sphere(new THREE.Vector3(0,0,0), R*1.05), hitV=new THREE.Vector3();
+  function wedgeAt(e){
+    rayXY.x=(e.clientX/innerWidth)*2-1;
+    rayXY.y=-(e.clientY/innerHeight)*2+1;
+    ray.setFromCamera(rayXY,cam);
+    if(!ray.ray.intersectSphere(sphV,hitV)) return -1;
+    core.worldToLocal(hitV);
+    let lon=Math.atan2(hitV.z,hitV.x); if(lon<0)lon+=TAU;
+    const u=lon/TAU;
+    let tot=0; for(let i=0;i<NN;i++) tot+=secW[i];
+    let acc=0;
+    for(let i=0;i<NN;i++){ acc+=secW[i]/tot; if(u<acc) return i; }
+    return NN-1;
+  }
+  renderer.domElement.addEventListener("click",function(e){
+    const i=wedgeAt(e);
+    if(i>=0) setFocus(i);
+  });
+  renderer.domElement.addEventListener("mousemove",function(e){
+    renderer.domElement.style.cursor = wedgeAt(e)>=0 ? "pointer" : "";
+  });
   hit.addEventListener("keydown",function(e){
     if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleListen();}
   });
