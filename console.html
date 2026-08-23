@@ -988,9 +988,15 @@
   function weather(){
     if(WXLOC){ fetchWx(WXLOC.la, WXLOC.lo, WXLOC.label); return; }
     if(!navigator.geolocation){ $("wxD").textContent="no location \u00B7 enter zip"; return; }
+    /* the position prompt can resolve long after a zip was typed \u2014
+       a manual zip always wins over a late geolocation answer */
     navigator.geolocation.getCurrentPosition(function(pos){
+      if(WXLOC) return;
       fetchWx(pos.coords.latitude.toFixed(3), pos.coords.longitude.toFixed(3), null);
-    }, function(){ $("wxD").textContent="denied \u00B7 enter zip"; $("wxP").textContent="--"; },
+    }, function(){
+      if(WXLOC) return;
+      $("wxD").textContent="denied \u00B7 enter zip"; $("wxP").textContent="--";
+    },
     {timeout:9000, maximumAge:600000});
   }
   weather();
