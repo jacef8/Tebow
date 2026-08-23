@@ -42,14 +42,14 @@
 
   .pane{
     position:relative;background:var(--pane);border:1px solid var(--edge);
-    backdrop-filter:blur(3px);padding:10px 12px;min-height:0;
+    backdrop-filter:blur(3px);padding:8px 11px;min-height:0;
   }
   .pane::before,.pane::after{content:"";position:absolute;width:10px;height:10px;border:1px solid var(--edge-hot);pointer-events:none;}
   .pane::before{top:-1px;left:-1px;border-right:0;border-bottom:0;}
   .pane::after{bottom:-1px;right:-1px;border-left:0;border-top:0;}
   .ph{
     font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.26em;
-    text-transform:uppercase;color:var(--gold);margin:0 0 9px;
+    text-transform:uppercase;color:var(--gold);margin:0 0 7px;
     display:flex;align-items:center;gap:8px;
   }
   .ph::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--edge),transparent);}
@@ -74,28 +74,34 @@
   .stat{font-size:12px;letter-spacing:.12em;color:var(--dim);}
   .stat b{color:var(--gold);font-weight:400;}
 
-  .left{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;scrollbar-width:none;}
+  .left{display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;scrollbar-width:none;}
   .left::-webkit-scrollbar{display:none;}
   .dials{display:flex;justify-content:space-between;gap:6px;}
   .dial{text-align:center;}
-  .dial canvas{display:block;width:60px;height:60px;}
+  .dial canvas{display:block;width:48px;height:48px;}
   .dial span{display:block;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:2px;}
-  #wave{width:100%;height:52px;display:block;}
+  #wave{width:100%;height:34px;display:block;}
 
   /* readouts */
-  .rd{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:1.85;letter-spacing:.06em;}
+  .rd{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:1.55;letter-spacing:.06em;}
   .rd span{color:var(--dim);text-transform:uppercase;}
   .rd b{color:var(--gold);font-weight:400;text-align:right;}
   .rd b.warn{color:var(--red);}
   .bigclock{
-    font-family:var(--disp);font-weight:700;font-size:34px;letter-spacing:.08em;
+    font-family:var(--disp);font-weight:700;font-size:24px;letter-spacing:.08em;
     color:var(--hot);text-shadow:0 0 20px rgba(255,160,50,.6);line-height:1;
   }
-  .bigdate{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:5px;}
+  .bigdate{font-size:10px;letter-spacing:.20em;text-transform:uppercase;color:var(--dim);margin-top:3px;}
   .wx{display:flex;align-items:baseline;gap:10px;}
-  .wxT{font-family:var(--disp);font-weight:700;font-size:30px;color:var(--hot);line-height:1;}
+  .wxT{font-family:var(--disp);font-weight:700;font-size:24px;color:var(--hot);line-height:1;}
   .wxD{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
-  .spark{width:100%;height:34px;display:block;margin-top:6px;}
+  .spark{width:100%;height:24px;display:block;margin-top:4px;}
+  .rd input{
+    background:transparent;border:0;border-bottom:1px solid rgba(255,138,30,.25);
+    outline:0;color:var(--gold);font-family:var(--mono);font-size:11px;
+    width:64px;text-align:right;padding:0;
+  }
+  .rd input::placeholder{color:#7A5432;}
 
   /* bottom ticker */
   .ticker{
@@ -110,7 +116,7 @@
 
   .roster{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0;}
   .rrow{
-    display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;padding:3px 6px;cursor:pointer;
     font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
     border-left:2px solid rgba(255,138,30,.20);transition:.18s;
   }
@@ -198,6 +204,21 @@
   }
   .nodestrip button .n{display:inline-block;width:6px;height:6px;margin-right:6px;vertical-align:1px;}
 
+  /* short windows: tighten the left column further so it never scrolls */
+  @media (max-height:840px) and (min-width:1081px){
+    .left{gap:5px;}
+    .left .pane{padding:5px 10px;}
+    .ph{margin:0 0 4px;}
+    .bigclock{font-size:18px;}
+    .bigdate{margin-top:2px;font-size:9px;}
+    .dial canvas{width:34px;height:34px;}
+    #wave{height:20px;}
+    .wxT{font-size:18px;}
+    .spark{height:14px;margin-top:2px;}
+    .rd{line-height:1.32;}
+    .rrow{padding:2px 6px;font-size:10px;}
+  }
+
   @media (max-width:1080px){
     .os{
       grid-template-columns:1fr;
@@ -237,6 +258,7 @@
       <span class="stat" id="clock">--:--:--</span>
       <button class="chip cast" id="broadcast">Ask all</button>
       <button class="chip" id="live" aria-pressed="false">Live</button>
+      <button class="chip" id="wake" aria-pressed="false">Wake</button>
       <button class="chip" id="voice" aria-pressed="true">Voice</button>
       <button class="chip" id="keyBtn">Key</button>
       <button class="chip" id="purge">Purge</button>
@@ -270,23 +292,20 @@
     <div class="pane" style="flex:0 0 auto;">
       <h2 class="ph">Weather</h2>
       <div class="wx"><div class="wxT" id="wxT">--&deg;</div><div class="wxD" id="wxD">locating</div></div>
-      <canvas class="spark" id="wxSpark" width="400" height="68"></canvas>
+      <canvas class="spark" id="wxSpark" width="400" height="48"></canvas>
       <div class="rd"><span>Wind</span><b id="wxW">--</b></div>
       <div class="rd"><span>Place</span><b id="wxP">--</b></div>
+      <div class="rd"><span>Zip</span><input id="wxZip" maxlength="5" inputmode="numeric" autocomplete="postal-code" placeholder="auto"></div>
     </div>
 
     <div class="pane" style="flex:0 0 auto;">
-      <h2 class="ph">Machine</h2>
+      <h2 class="ph">System</h2>
       <div class="rd"><span>Battery</span><b id="tBat">--</b></div>
       <div class="rd"><span>Network</span><b id="tNet">--</b></div>
       <div class="rd"><span>Cores</span><b id="tCpu">--</b></div>
       <div class="rd"><span>Memory</span><b id="tMem">--</b></div>
       <div class="rd"><span>Render</span><b id="tFps">--</b></div>
       <div class="rd"><span>Screen</span><b id="tScr">--</b></div>
-    </div>
-
-    <div class="pane" style="flex:0 0 auto;">
-      <h2 class="ph">Session</h2>
       <div class="rd"><span>Uptime</span><b id="tUp">00:00</b></div>
       <div class="rd"><span>Exchanges</span><b id="tEx">0</b></div>
       <div class="rd"><span>Words out</span><b id="tWd">0</b></div>
@@ -294,7 +313,7 @@
       <div class="rd"><span>Voice</span><b id="tVox">--</b></div>
     </div>
 
-    <div class="pane" style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;min-height:120px;">
+    <div class="pane" style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;min-height:84px;">
       <h2 class="ph">Threads</h2>
       <div class="roster" id="roster"></div>
     </div>
@@ -318,7 +337,9 @@
           six answers, six angles, in parallel.<br><br>
           The core sphere is split into six wedges, one per node. A wedge
           takes on its node's color and widens as that node carries more
-          of the conversation.
+          of the conversation.<br><br>
+          <b>Wake</b> arms the "hey Tebow" phrase: the mic stays open
+          hands-free but only obeys after you call it.
         </div>
       </div>
     </div>
@@ -374,10 +395,12 @@
         keyInput=$("keyInput"),modeEl=$("mode"),clock=$("clock"),hit=$("hit"),
         castBtn=$("broadcast"),tabsEl=$("tabs"),rosterEl=$("roster"),
         targetEl=$("target"),feedHead=$("feedHead"),
-        liveBtn=$("live"),capEl=$("caption"),stripEl=$("nodestrip");
+        liveBtn=$("live"),capEl=$("caption"),stripEl=$("nodestrip"),
+        wakeBtn=$("wake");
 
   let mode="idle";
   let listening=false, liveMode=false, wantListen=false, bargeArmed=false;
+  let wakeMode=false, awake=false, awakeTimer=null;
   const NB=128;
   const bins=new Float32Array(NB), targ=new Float32Array(NB);
   for(let i=0;i<NB;i++) targ[i]=0.05;
@@ -898,31 +921,57 @@
     x.fillStyle=g; x.fill();
   }
 
-  async function weather(){
-    if(!navigator.geolocation){ $("wxD").textContent="no location"; return; }
-    navigator.geolocation.getCurrentPosition(async function(pos){
-      const la=pos.coords.latitude.toFixed(3), lo=pos.coords.longitude.toFixed(3);
-      $("wxP").textContent = la+", "+lo;
-      try{
-        const u="https://api.open-meteo.com/v1/forecast?latitude="+la+"&longitude="+lo+
-                "&current=temperature_2m,wind_speed_10m,weather_code"+
-                "&hourly=temperature_2m&forecast_days=1&temperature_unit=fahrenheit&wind_speed_unit=mph";
-        const r=await fetch(u);
-        const d=await r.json();
-        WX.temp=Math.round(d.current.temperature_2m);
-        WX.wind=Math.round(d.current.wind_speed_10m);
-        WX.series=(d.hourly&&d.hourly.temperature_2m||[]).slice(0,24);
-        const CODES={0:"clear",1:"mostly clear",2:"partly cloudy",3:"overcast",45:"fog",48:"fog",
-          51:"drizzle",53:"drizzle",55:"drizzle",61:"rain",63:"rain",65:"heavy rain",
-          71:"snow",73:"snow",75:"snow",80:"showers",81:"showers",82:"heavy showers",
-          95:"thunderstorm",96:"thunderstorm",99:"thunderstorm"};
-        WX.desc=CODES[d.current.weather_code]||"--";
-        $("wxT").textContent=WX.temp+"\u00B0";
-        $("wxD").textContent=WX.desc;
-        $("wxW").textContent=WX.wind+" mph";
-        wxSpark();
-      }catch(e){ $("wxD").textContent="feed blocked"; }
-    }, function(){ $("wxD").textContent="location denied"; $("wxP").textContent="--"; },
+  async function fetchWx(la, lo, label){
+    $("wxP").textContent = label || (la+", "+lo);
+    try{
+      const u="https://api.open-meteo.com/v1/forecast?latitude="+la+"&longitude="+lo+
+              "&current=temperature_2m,wind_speed_10m,weather_code"+
+              "&hourly=temperature_2m&forecast_days=1&temperature_unit=fahrenheit&wind_speed_unit=mph";
+      const r=await fetch(u);
+      const d=await r.json();
+      WX.temp=Math.round(d.current.temperature_2m);
+      WX.wind=Math.round(d.current.wind_speed_10m);
+      WX.series=(d.hourly&&d.hourly.temperature_2m||[]).slice(0,24);
+      const CODES={0:"clear",1:"mostly clear",2:"partly cloudy",3:"overcast",45:"fog",48:"fog",
+        51:"drizzle",53:"drizzle",55:"drizzle",61:"rain",63:"rain",65:"heavy rain",
+        71:"snow",73:"snow",75:"snow",80:"showers",81:"showers",82:"heavy showers",
+        95:"thunderstorm",96:"thunderstorm",99:"thunderstorm"};
+      WX.desc=CODES[d.current.weather_code]||"--";
+      $("wxT").textContent=WX.temp+"\u00B0";
+      $("wxD").textContent=WX.desc;
+      $("wxW").textContent=WX.wind+" mph";
+      wxSpark();
+    }catch(e){ $("wxD").textContent="feed blocked"; }
+  }
+
+  /* manual location: type a US zip and it overrides geolocation.
+     zippopotam.us is a free, keyless zip \u2192 lat/lon lookup. */
+  let WXLOC=null;
+  async function zipLookup(z){
+    $("wxD").textContent="looking up "+z;
+    try{
+      const r=await fetch("https://api.zippopotam.us/us/"+z);
+      if(!r.ok) throw new Error("bad zip");
+      const d=await r.json();
+      const p=d.places[0];
+      WXLOC={ la:(+p.latitude).toFixed(3), lo:(+p.longitude).toFixed(3),
+              label:(p["place name"]+", "+p["state abbreviation"]).toUpperCase() };
+      weather();
+    }catch(e){ $("wxD").textContent="zip not found"; }
+  }
+  $("wxZip").addEventListener("input",function(){
+    const z=this.value.replace(/\D/g,"");
+    this.value=z;
+    if(z.length===5) zipLookup(z);
+    else if(!z.length && WXLOC){ WXLOC=null; weather(); }
+  });
+
+  function weather(){
+    if(WXLOC){ fetchWx(WXLOC.la, WXLOC.lo, WXLOC.label); return; }
+    if(!navigator.geolocation){ $("wxD").textContent="no location \u00B7 enter zip"; return; }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      fetchWx(pos.coords.latitude.toFixed(3), pos.coords.longitude.toFixed(3), null);
+    }, function(){ $("wxD").textContent="denied \u00B7 enter zip"; $("wxP").textContent="--"; },
     {timeout:9000, maximumAge:600000});
   }
   weather();
@@ -943,6 +992,7 @@
     if(batt) bits.push("BATTERY <b>"+Math.round(batt.level*100)+"%</b>");
     bits.push("MIC <b>"+(listening?"open":"closed")+"</b>");
     bits.push("LIVE <b>"+(liveMode?"on":"off")+"</b>");
+    bits.push("WAKE <b>"+(wakeMode?"armed":"off")+"</b>");
     const line=bits.join(" &nbsp;·&nbsp; ");
     $("tick").innerHTML = line+" &nbsp;·&nbsp; "+line;
   }
@@ -977,6 +1027,22 @@
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   let rec=null;
 
+  /* ── wake phrase: "hey Tebow" ──
+     With Wake armed the open mic obeys nothing until it hears the
+     phrase. Spellings cover what speech recognition tends to write. */
+  const WAKE_RE=/(?:\b(?:hey|hay|ok|okay|yo)[\s,]+)?\b(?:tebow|tebo|teebo|teebow|tibo|tee\s?bow?|t\s?bow)\b[\s,.!?]*/i;
+  function wakeStrip(txt){
+    const m=txt.match(WAKE_RE);
+    if(!m) return {hit:false, rest:txt};
+    return {hit:true, rest:txt.slice(m.index+m[0].length)};
+  }
+  function wakeGated(){ return wakeMode && liveMode; }
+  function listenLabel(){
+    return liveMode
+      ? (wakeGated()&&!awake ? "LIVE · SAY “HEY TEBOW”" : "LIVE · LISTENING")
+      : "LISTENING";
+  }
+
   function startListen(){
     if(!SR||listening) return;
     wantListen=true;
@@ -996,7 +1062,7 @@
     rec.onstart=function(){
       listening=true;
       bargeArmed=speaking;        /* if it's mid-answer, the next words interrupt */
-      setMode("listening", liveMode?"LIVE · LISTENING":"LISTENING");
+      setMode("listening", listenLabel());
       startAmp();
     };
 
@@ -1026,17 +1092,38 @@
         else interim+=r[0].transcript;
       }
 
-      /* barge-in: the moment you speak over an answer, it stops talking */
+      /* barge-in: the moment you speak over an answer, it stops talking —
+         unless Wake is armed, in which case only the wake phrase interrupts */
       if(speaking && (interim.trim().length>1 || finalTxt.trim())){
-        stopSpeaking();
-        setMode("listening", liveMode?"LIVE · LISTENING":"LISTENING");
+        if(!wakeGated() || wakeStrip(interim+" "+finalTxt).hit){
+          stopSpeaking();
+          setMode("listening", listenLabel());
+        }
       }
 
       if(interim) caption(interim, true);
 
       if(finalTxt.trim()){
-        caption(finalTxt.trim(), false);
-        input.value=finalTxt.trim();
+        let cmd=finalTxt.trim();
+        if(wakeGated() && !awake){
+          const w=wakeStrip(cmd);
+          if(!w.hit){ caption(""); return; }   /* not for us — drop it */
+          cmd=w.rest.trim();
+          if(!cmd){                            /* bare "hey Tebow" — wait for the ask */
+            awake=true;
+            if(awakeTimer) clearTimeout(awakeTimer);
+            awakeTimer=setTimeout(function(){
+              awake=false;
+              if(mode==="listening") setMode("listening", listenLabel());
+            },8000);
+            caption("yes?", false);
+            setMode("listening","TEBOW · LISTENING");
+            return;
+          }
+        }
+        if(awake){ awake=false; if(awakeTimer){ clearTimeout(awakeTimer); awakeTimer=null; } }
+        caption(cmd, false);
+        input.value=cmd;
         if(!liveMode) stopListen();
         submit(false);
       }
@@ -1063,6 +1150,17 @@
     liveBtn.setAttribute("aria-pressed",String(liveMode));
     if(liveMode){ stopSpeaking(); startListen(); }
     else { stopListen(); }
+  });
+
+  /* Wake: hands-free with a wake phrase — arming it also opens the Live loop */
+  wakeBtn.addEventListener("click",function(){
+    if(!SR){ input.focus(); return; }
+    wakeMode=!wakeMode;
+    wakeBtn.setAttribute("aria-pressed",String(wakeMode));
+    awake=false;
+    if(awakeTimer){ clearTimeout(awakeTimer); awakeTimer=null; }
+    if(wakeMode && !liveMode) liveBtn.click();
+    else if(listening) setMode("listening", listenLabel());
   });
 
   /* ══════════ speech out ══════════ */
