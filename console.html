@@ -24,7 +24,10 @@
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;}
   body{background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13px;overflow:hidden;-webkit-font-smoothing:antialiased;}
-  #gl{position:fixed;inset:0;z-index:0;}
+  /* width/height must be pinned: on high-DPI screens the canvas's
+     internal buffer is larger than the window, and an unpinned canvas
+     displays at buffer size — pushing the orb off the bottom-right */
+  #gl{position:fixed;inset:0;z-index:0;width:100%;height:100%;}
   .veil{
     position:fixed;inset:0;z-index:1;pointer-events:none;
     background:
@@ -107,7 +110,7 @@
   .ticker{
     grid-column:1/4;display:flex;align-items:center;gap:0;overflow:hidden;
     border:1px solid var(--edge);background:var(--pane);backdrop-filter:blur(3px);
-    padding:5px 12px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    padding:6px 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#C89A6C;
   }
   .ticker div{display:flex;gap:22px;white-space:nowrap;animation:tk 42s linear infinite;padding-right:22px;}
   .ticker b{color:var(--gold);font-weight:400;}
@@ -217,6 +220,24 @@
     .spark{height:14px;margin-top:2px;}
     .rd{line-height:1.32;}
     .rrow{padding:2px 6px;font-size:10px;}
+  }
+
+  /* very short windows (small laptops at high display scaling) */
+  @media (max-height:700px) and (min-width:1081px){
+    .left{gap:4px;}
+    .left .pane{padding:3px 9px;}
+    .ph{margin:0 0 3px;font-size:10px;}
+    .bigclock{font-size:14px;}
+    .bigdate{display:none;}
+    .dial canvas{width:24px;height:24px;}
+    .dial span{font-size:8px;}
+    #wave{height:10px;}
+    .wxT{font-size:14px;}
+    .spark{height:8px;margin-top:2px;}
+    .rd{line-height:1.22;font-size:10px;}
+    .rrow{padding:1px 6px;font-size:10px;}
+    .ticker{font-size:11px;padding:4px 12px;}
+    .cmd input{padding:9px 0;}
   }
 
   @media (max-width:1080px){
