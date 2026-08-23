@@ -221,7 +221,8 @@
     .pane{background:rgba(20,10,3,.80);}
     .ticker{grid-column:1;font-size:9px;}
     .core{justify-content:center;padding-bottom:0;}
-    .hit{width:min(22vh,150px);height:min(22vh,150px);}
+    .hit{width:min(26vh,200px);height:min(26vh,200px);}
+    .tabs{display:none;}   /* the chat strip up top already switches chats */
     .caption{font-size:14px;}
     .brand{font-size:15px;letter-spacing:.20em;}
     .chip{font-size:10px;padding:5px 8px;}
@@ -397,9 +398,13 @@
   const scene=new THREE.Scene();
   const cam=new THREE.PerspectiveCamera(48,1,0.1,200);
   cam.position.set(0,1.5,9.2);
+  /* camera distance: 9.2 on wide screens, farther on narrow/portrait
+     ones so the whole orb stays inside the view */
+  let camD=9.2;
   function resize(){
     renderer.setSize(innerWidth,innerHeight,false);
     cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix();
+    camD=Math.max(9.2, 2.9/(0.4452*cam.aspect));
   }
   addEventListener("resize",resize); resize();
 
@@ -595,8 +600,8 @@
     haloMat.opacity=0.36+mean*0.44;
 
     const orbit=t*0.035;
-    cam.position.x=Math.sin(orbit)*9.2;
-    cam.position.z=Math.cos(orbit)*9.2;
+    cam.position.x=Math.sin(orbit)*camD;
+    cam.position.z=Math.cos(orbit)*camD;
     cam.position.y=1.6+Math.sin(t*0.20)*0.85;
     cam.lookAt(0,0,0);
 
