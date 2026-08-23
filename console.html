@@ -79,30 +79,20 @@
 
   .left{display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;scrollbar-width:none;}
   .left::-webkit-scrollbar{display:none;}
-  .dials{display:flex;justify-content:space-between;gap:6px;}
-  .dial{text-align:center;}
-  .dial canvas{display:block;width:48px;height:48px;}
-  .dial span{display:block;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:2px;}
-  #wave{width:100%;height:34px;display:block;}
 
   /* readouts */
-  .rd{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:1.55;letter-spacing:.06em;}
+  .rd{display:flex;justify-content:space-between;gap:8px;font-size:13px;line-height:1.8;letter-spacing:.06em;}
   .rd span{color:var(--dim);text-transform:uppercase;}
   .rd b{color:var(--gold);font-weight:400;text-align:right;}
   .rd b.warn{color:var(--red);}
-  .bigclock{
-    font-family:var(--disp);font-weight:700;font-size:24px;letter-spacing:.08em;
-    color:var(--hot);text-shadow:0 0 20px rgba(255,160,50,.6);line-height:1;
-  }
-  .bigdate{font-size:10px;letter-spacing:.20em;text-transform:uppercase;color:var(--dim);margin-top:3px;}
   .wx{display:flex;align-items:baseline;gap:10px;}
-  .wxT{font-family:var(--disp);font-weight:700;font-size:24px;color:var(--hot);line-height:1;}
-  .wxD{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
-  .spark{width:100%;height:24px;display:block;margin-top:4px;}
+  .wxT{font-family:var(--disp);font-weight:700;font-size:30px;color:var(--hot);line-height:1;}
+  .wxD{font-size:13px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
+  .spark{width:100%;height:30px;display:block;margin-top:5px;}
   .rd input{
     background:transparent;border:0;border-bottom:1px solid rgba(255,138,30,.25);
-    outline:0;color:var(--gold);font-family:var(--mono);font-size:11px;
-    width:64px;text-align:right;padding:0;
+    outline:0;color:var(--gold);font-family:var(--mono);font-size:13px;
+    width:76px;text-align:right;padding:0;
   }
   .rd input::placeholder{color:#7A5432;}
 
@@ -119,8 +109,8 @@
 
   .roster{display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0;}
   .rrow{
-    display:flex;align-items:center;gap:8px;padding:3px 6px;cursor:pointer;
-    font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;
+    font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);
     border-left:2px solid rgba(255,138,30,.20);transition:.18s;
   }
   .rrow:hover{background:rgba(255,138,30,.07);}
@@ -208,37 +198,15 @@
   }
   .nodestrip button .n{display:inline-block;width:6px;height:6px;margin-right:6px;vertical-align:1px;}
 
-  /* short windows: tighten the left column further so it never scrolls */
-  @media (max-height:840px) and (min-width:1081px){
+  /* very short windows: modest tightening — text never drops below 12px */
+  @media (max-height:700px) and (min-width:1081px){
     .left{gap:5px;}
     .left .pane{padding:5px 10px;}
     .ph{margin:0 0 4px;}
-    .bigclock{font-size:18px;}
-    .bigdate{margin-top:2px;font-size:9px;}
-    .dial canvas{width:34px;height:34px;}
-    #wave{height:20px;}
-    .wxT{font-size:18px;}
-    .spark{height:14px;margin-top:2px;}
-    .rd{line-height:1.32;}
-    .rrow{padding:2px 6px;font-size:10px;}
-  }
-
-  /* very short windows (small laptops at high display scaling) */
-  @media (max-height:700px) and (min-width:1081px){
-    .left{gap:4px;}
-    .left .pane{padding:3px 9px;}
-    .ph{margin:0 0 3px;font-size:10px;}
-    .bigclock{font-size:14px;}
-    .bigdate{display:none;}
-    .dial canvas{width:24px;height:24px;}
-    .dial span{font-size:8px;}
-    #wave{height:10px;}
-    .wxT{font-size:14px;}
-    .spark{height:8px;margin-top:2px;}
-    .rd{line-height:1.22;font-size:10px;}
-    .rrow{padding:1px 6px;font-size:10px;}
-    .ticker{font-size:11px;padding:4px 12px;}
-    .cmd input{padding:9px 0;}
+    .wxT{font-size:22px;}
+    .spark{height:18px;margin-top:3px;}
+    .rd{line-height:1.5;font-size:12px;}
+    .rrow{padding:3px 6px;font-size:12px;}
   }
 
   @media (max-width:1080px){
@@ -284,6 +252,7 @@
       <button class="chip" id="voice" aria-pressed="true">Voice</button>
       <button class="chip" id="keyBtn">Key</button>
       <button class="chip" id="purge">Purge</button>
+      <button class="chip" id="helpBtn">Help</button>
     </div>
   </div>
 
@@ -297,21 +266,6 @@
 
   <div class="left">
     <div class="pane" style="flex:0 0 auto;">
-      <div class="bigclock" id="bigclock">--:--:--</div>
-      <div class="bigdate" id="bigdate">&mdash;</div>
-    </div>
-
-    <div class="pane" style="flex:0 0 auto;">
-      <h2 class="ph">Core</h2>
-      <div class="dials">
-        <div class="dial"><canvas id="d1" width="120" height="120"></canvas><span>MIC</span></div>
-        <div class="dial"><canvas id="d2" width="120" height="120"></canvas><span>BUSY</span></div>
-        <div class="dial"><canvas id="d3" width="120" height="120"></canvas><span>USED</span></div>
-      </div>
-      <canvas id="wave" width="420" height="104"></canvas>
-    </div>
-
-    <div class="pane" style="flex:0 0 auto;">
       <h2 class="ph">Weather</h2>
       <div class="wx"><div class="wxT" id="wxT">--&deg;</div><div class="wxD" id="wxD">locating</div></div>
       <canvas class="spark" id="wxSpark" width="400" height="48"></canvas>
@@ -324,13 +278,7 @@
       <h2 class="ph">System</h2>
       <div class="rd"><span>Battery</span><b id="tBat">--</b></div>
       <div class="rd"><span>Network</span><b id="tNet">--</b></div>
-      <div class="rd"><span>Cores</span><b id="tCpu">--</b></div>
-      <div class="rd"><span>Memory</span><b id="tMem">--</b></div>
-      <div class="rd"><span>Render</span><b id="tFps">--</b></div>
-      <div class="rd"><span>Screen</span><b id="tScr">--</b></div>
       <div class="rd"><span>Uptime</span><b id="tUp">00:00</b></div>
-      <div class="rd"><span>Exchanges</span><b id="tEx">0</b></div>
-      <div class="rd"><span>Words out</span><b id="tWd">0</b></div>
       <div class="rd"><span>Last reply</span><b id="tLat">--</b></div>
       <div class="rd"><span>Voice</span><b id="tVox">--</b></div>
     </div>
@@ -349,7 +297,7 @@
 
   <div class="right">
     <div class="pane" style="flex:1 1 auto;display:flex;flex-direction:column;min-height:0;">
-      <h2 class="ph" id="feedHead">Transcript</h2>
+      <h2 class="ph" id="feedHead">Conversation</h2>
       <div class="tabs" id="tabs"></div>
       <div class="feed" id="feed" aria-live="polite">
         <div class="empty" id="empty">
@@ -378,6 +326,20 @@
     <button class="chip" id="send">Transmit</button>
   </div>
 
+</div>
+
+<div id="help" style="display:none;position:fixed;inset:0;z-index:9;background:rgba(4,3,10,.88);cursor:pointer;overflow-y:auto;">
+  <div style="max-width:660px;margin:6vh auto;padding:22px 28px;border:1px solid var(--edge-hot);background:rgba(26,13,4,.95);font-size:15px;line-height:1.85;color:var(--txt);">
+    <h2 class="ph" style="font-size:13px;">How to use Tebow</h2>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">First time here:</b> click <b>KEY</b> in the top bar and paste your API key. Without it, nothing can answer.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Talk:</b> tap the orb's center and speak. Pause when you're done — it sends itself and answers out loud. Tap again to turn the mic off.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Type:</b> use the bar at the bottom and press Enter.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Six chats:</b> the orb's colored slices are six separate conversations, each with its own memory. Click a slice, a tab, or a name in the Chats list to switch. Your question goes to the highlighted chat. A slice grows as its chat is used more.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Right panel:</b> the conversation of the highlighted chat — what you said and what Tebow answered.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">ASK ALL</b> sends one question to all six chats at once. <b style="color:var(--gold);">LIVE</b> keeps the mic open hands-free. <b style="color:var(--gold);">WAKE</b> is hands-free but only obeys after "hey Tebow". <b style="color:var(--gold);">VOICE</b> mutes the speech. <b style="color:var(--gold);">PURGE</b> erases all six chats.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Mic asking permission?</b> Click Allow. If it says MIC BLOCKED, click the padlock next to the web address, set Microphone to Allow, and reload the page.</p>
+    <p style="margin:10px 0 0;color:var(--dim);">Click anywhere to close.</p>
+  </div>
 </div>
 
 <script>
@@ -643,51 +605,6 @@
   }
   frame();
 
-  /* ══════════ HUD ══════════ */
-  const wc=$("wave"),wx=wc.getContext("2d");
-  (function wave(){
-    wx.clearRect(0,0,wc.width,wc.height);
-    const mid=wc.height/2,cols=64;
-    for(let i=0;i<cols;i++){
-      const b=Math.floor(i/cols*NB), v=bins[b]*mid*0.95+1;
-      wx.fillStyle="rgba(255,150,40,"+(0.25+bins[b]*0.72)+")";
-      wx.fillRect(i/cols*wc.width,mid-v,wc.width/cols-2,v*2);
-    }
-    wx.strokeStyle="rgba(255,138,30,.20)";
-    wx.beginPath();wx.moveTo(0,mid);wx.lineTo(wc.width,mid);wx.stroke();
-    requestAnimationFrame(wave);
-  })();
-
-  function dial(id,val,label){
-    const c=$(id),x=c.getContext("2d"),S=120,cc=S/2;
-    x.clearRect(0,0,S,S);
-    x.beginPath();x.arc(cc,cc,44,0,Math.PI*2);
-    x.strokeStyle="rgba(255,138,30,.16)";x.lineWidth=8;x.stroke();
-    x.beginPath();x.arc(cc,cc,44,-Math.PI/2,-Math.PI/2+Math.PI*2*val);
-    x.strokeStyle="#FF9A2E";x.lineWidth=8;x.lineCap="round";x.stroke();
-    for(let i=0;i<28;i++){
-      const a=i/28*Math.PI*2;
-      x.beginPath();
-      x.moveTo(cc+Math.cos(a)*52,cc+Math.sin(a)*52);
-      x.lineTo(cc+Math.cos(a)*58,cc+Math.sin(a)*58);
-      x.strokeStyle="rgba(255,180,80,"+(i/28<val?0.75:0.14)+")";
-      x.lineWidth=2;x.stroke();
-    }
-    x.fillStyle="#FFE9B8";x.font="600 21px 'Rajdhani',sans-serif";
-    x.textAlign="center";x.textBaseline="middle";
-    x.fillText(label,cc,cc);
-  }
-  setInterval(function(){
-    let mean=0; for(let i=0;i<NB;i++) mean+=bins[i]; mean/=NB;
-    const sig=Math.min(1,mean*1.7);
-    const active=SESSIONS.filter(function(s){return s.busy;}).length;
-    const load=active/NN;
-    const used=SESSIONS.filter(function(s){return s.history.length;}).length;
-    dial("d1",sig,Math.round(sig*100));
-    dial("d2",load,active+"/"+NN);
-    dial("d3",used/NN,used);
-  },130);
-
   /* roster + tabs */
   SESSIONS.forEach(function(s,i){
     const r=document.createElement("div");
@@ -728,7 +645,7 @@
     focusIdx=i;
     targetEl.textContent="→ "+SESSIONS[i].name;
     targetEl.style.color=SESSIONS[i].css;
-    feedHead.textContent=SESSIONS[i].name+" transcript";
+    feedHead.textContent=SESSIONS[i].name+" conversation";
     render(); paintState();
   }
 
@@ -770,6 +687,9 @@
     keybar.classList.toggle("open");
     if(keybar.classList.contains("open")) keyInput.focus();
   });
+
+  $("helpBtn").addEventListener("click",function(){ $("help").style.display="block"; });
+  $("help").addEventListener("click",function(){ $("help").style.display="none"; });
   keyInput.addEventListener("input",function(){ API_KEY=keyInput.value.trim(); });
 
   /* ── live caption ── */
@@ -798,18 +718,6 @@
   const T0=Date.now();
   let words=0, exchanges=0, lastLat=null;
   const WX={temp:null,wind:null,place:null,desc:null,series:[]};
-
-  /* clock */
-  function clocks(){
-    const d=new Date();
-    const hh=String(d.getHours()).padStart(2,"0");
-    const mm=String(d.getMinutes()).padStart(2,"0");
-    const ss=String(d.getSeconds()).padStart(2,"0");
-    $("bigclock").textContent=hh+":"+mm+":"+ss;
-    clock.textContent=hh+":"+mm+":"+ss;
-    $("bigdate").textContent=d.toLocaleDateString([], {weekday:"long",month:"short",day:"numeric",year:"numeric"});
-  }
-  clocks(); setInterval(clocks,1000);
 
   /* battery */
   let batt=null;
@@ -841,15 +749,7 @@
   if(nc&&nc.addEventListener) nc.addEventListener("change",net);
   addEventListener("online",net); addEventListener("offline",net);
 
-  /* static machine facts */
-  $("tCpu").textContent = (navigator.hardwareConcurrency||"?")+" threads";
-  $("tMem").textContent = navigator.deviceMemory ? (navigator.deviceMemory+" GB") : "n/a";
-  function screenLine(){
-    $("tScr").textContent = innerWidth+"×"+innerHeight+" @"+(devicePixelRatio||1)+"x";
-  }
-  screenLine(); addEventListener("resize",screenLine);
-
-  /* framerate */
+  /* framerate (ticker only) */
   let fCount=0, fLast=performance.now(), fps=0;
   function fpsTick(){
     fCount++;
@@ -857,9 +757,6 @@
     if(now-fLast>=1000){
       fps=Math.round(fCount*1000/(now-fLast));
       fCount=0; fLast=now;
-      const el=$("tFps");
-      el.textContent=fps+" fps";
-      el.classList.toggle("warn", fps<25);
     }
     requestAnimationFrame(fpsTick);
   }
@@ -870,8 +767,6 @@
     const el=Math.floor((Date.now()-T0)/1000);
     const h=Math.floor(el/3600), m=Math.floor(el%3600/60), sec=el%60;
     $("tUp").textContent = (h? h+"h ":"")+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
-    $("tEx").textContent = exchanges;
-    $("tWd").textContent = words.toLocaleString();
     $("tLat").textContent = lastLat==null ? "--" : (lastLat/1000).toFixed(1)+"s";
     const v=SESSIONS[focusIdx].voice;
     $("tVox").textContent = v ? v.name.replace(/^(Microsoft|Google)\s+/,"").slice(0,16) : "default";
@@ -1070,6 +965,8 @@
       if(e.error==="no-speech"&&wantListen){ return; }
       wantListen=false; stopAmp(); caption("");
       setMode("idle", e.error==="not-allowed" ? "MIC BLOCKED" : "MIC OFFLINE");
+      if(e.error==="not-allowed")
+        caption("Mic blocked — click the padlock by the web address, allow the microphone, and reload", true);
     };
 
     rec.onresult=function(e){
@@ -1262,7 +1159,7 @@
     s.strip.lastChild.nodeValue = s.name;
     if(SESSIONS.indexOf(s)===focusIdx){
       targetEl.textContent="→ "+s.name;
-      feedHead.textContent=s.name+" transcript";
+      feedHead.textContent=s.name+" conversation";
     }
   }
 
