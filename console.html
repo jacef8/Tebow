@@ -309,13 +309,15 @@
       <button class="chip" id="keyBtn">Key</button>
       <button class="chip" id="purge">Purge</button>
       <button class="chip" id="helpBtn">Help</button>
+      <a class="chip" href="https://claude.ai/code/artifact/a447e48d-ca6e-4953-86a1-84eaefa3fe0c" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">Hub ↗</a>
     </div>
   </div>
 
   <div class="keybar" id="keybar">
     <label for="keyInput">API KEY</label>
-    <input id="keyInput" type="password" autocomplete="off" placeholder="sk-ant-…  (only needed outside Claude)">
-    <span>session only</span>
+    <input id="keyInput" type="password" autocomplete="off" placeholder="sk-ant-…  (paste it — it takes effect as you type)">
+    <button class="chip" id="keyDone">Done</button>
+    <span>session only · never stored</span>
   </div>
 
   <div class="nodestrip" id="nodestrip"></div>
@@ -802,6 +804,19 @@
   $("helpBtn").addEventListener("click",function(){ $("help").style.display="block"; });
   $("help").addEventListener("click",function(){ $("help").style.display="none"; });
   keyInput.addEventListener("input",function(){ API_KEY=keyInput.value.trim(); });
+  function keyAccept(){
+    keybar.classList.remove("open");
+    if(API_KEY.length>20){
+      setMode("idle","KEY ACCEPTED");
+      speak("Key accepted. At your service.");
+      setTimeout(function(){ if(mode==="idle") setMode("idle","STANDBY"); },2500);
+    } else {
+      setMode("idle", API_KEY.length? "KEY LOOKS SHORT — CHECK IT" : "NO KEY — CLICK KEY");
+    }
+    input.focus();
+  }
+  $("keyDone").addEventListener("click",keyAccept);
+  keyInput.addEventListener("keydown",function(e){ if(e.key==="Enter") keyAccept(); });
 
   /* ── live caption ── */
   let capTimer=null;
