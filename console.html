@@ -1283,7 +1283,15 @@
       setMode("thinking",s.name+" · PROCESSING");
       const out=await ask(s,txt);
       if(out) speak(out, s, resume);
-      else { setMode("idle","STANDBY"); resume(); }
+      else {
+        /* say the failure out loud — a silent error looks like no answer */
+        setMode("idle", API_KEY ? "SEND FAILED" : "NO KEY — CLICK KEY");
+        if(s.error) speak(API_KEY
+          ? "That didn't go through. "+s.error.replace(/^Transmission failed — /,"")
+          : "I can't answer yet — click the key button and paste your A P I key first.",
+          s, resume);
+        else resume();
+      }
     }
   }
 
