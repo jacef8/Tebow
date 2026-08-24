@@ -8,15 +8,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
-    --bg:#04030A;
-    --pane:rgba(26,13,4,.55);
-    --edge:rgba(255,138,30,.30);
-    --edge-hot:rgba(255,190,90,.85);
-    --amber:#FF8A1E;
-    --gold:#FFC246;
-    --hot:#FFE9B8;
-    --txt:#FFE2BC;
-    --dim:#C08D5F;
+    --bg:#020610;
+    --pane:rgba(6,18,34,.55);
+    --edge:rgba(45,168,255,.30);
+    --edge-hot:rgba(140,215,255,.85);
+    --amber:#2FB8FF;
+    --gold:#7FD4FF;
+    --hot:#DFF6FF;
+    --txt:#CFE9FF;
+    --dim:#7FA6C9;
     --red:#FF4D6D;
     --mono:'Share Tech Mono',ui-monospace,Menlo,monospace;
     --disp:'Rajdhani','Arial Narrow',sans-serif;
@@ -31,9 +31,9 @@
   .veil{
     position:fixed;inset:0;z-index:1;pointer-events:none;
     background:
-      linear-gradient(rgba(255,138,30,.028) 1px,transparent 1px) 0 0/58px 58px,
-      linear-gradient(90deg,rgba(255,138,30,.028) 1px,transparent 1px) 0 0/58px 58px,
-      radial-gradient(125% 95% at 50% 48%,transparent 44%,rgba(4,3,10,.90) 100%);
+      linear-gradient(rgba(45,168,255,.028) 1px,transparent 1px) 0 0/58px 58px,
+      linear-gradient(90deg,rgba(45,168,255,.028) 1px,transparent 1px) 0 0/58px 58px,
+      radial-gradient(125% 95% at 50% 48%,transparent 44%,rgba(2,6,16,.90) 100%);
   }
 
   .os{
@@ -61,7 +61,7 @@
     grid-column:1/4;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
     border:1px solid var(--edge);background:var(--pane);backdrop-filter:blur(3px);padding:8px 14px;
   }
-  .brand{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.34em;color:var(--hot);text-shadow:0 0 18px rgba(255,160,50,.85);}
+  .brand{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.34em;color:var(--hot);text-shadow:0 0 18px rgba(80,190,255,.85);}
   .brand i{font-style:normal;color:var(--amber);}
   .chips{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .chip{
@@ -69,9 +69,9 @@
     font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
     padding:5px 10px;cursor:pointer;transition:.15s;
   }
-  .chip:hover:not(:disabled){background:rgba(255,138,30,.18);color:var(--hot);}
+  .chip:hover:not(:disabled){background:rgba(45,168,255,.18);color:var(--hot);}
   .chip:disabled{opacity:.35;cursor:default;}
-  .chip[aria-pressed="true"]{background:rgba(255,138,30,.24);color:var(--hot);border-color:var(--edge-hot);}
+  .chip[aria-pressed="true"]{background:rgba(45,168,255,.24);color:var(--hot);border-color:var(--edge-hot);}
   .chip.cast{border-color:var(--edge-hot);color:var(--hot);}
   .chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
   .stat{font-size:12px;letter-spacing:.12em;color:var(--dim);}
@@ -90,17 +90,17 @@
   .wxD{font-size:13px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
   .spark{width:100%;height:30px;display:block;margin-top:5px;}
   .rd input{
-    background:transparent;border:0;border-bottom:1px solid rgba(255,138,30,.25);
+    background:transparent;border:0;border-bottom:1px solid rgba(45,168,255,.25);
     outline:0;color:var(--gold);font-family:var(--mono);font-size:13px;
     width:76px;text-align:right;padding:0;
   }
-  .rd input::placeholder{color:#7A5432;}
+  .rd input::placeholder{color:#3E6A8F;}
 
   /* bottom ticker */
   .ticker{
     grid-column:1/4;display:flex;align-items:center;gap:0;overflow:hidden;
     border:1px solid var(--edge);background:var(--pane);backdrop-filter:blur(3px);
-    padding:6px 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#C89A6C;
+    padding:6px 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8FB6D9;
   }
   .ticker div{display:flex;gap:22px;white-space:nowrap;animation:tk 42s linear infinite;padding-right:22px;}
   .ticker b{color:var(--gold);font-weight:400;}
@@ -111,11 +111,11 @@
   .rrow{
     display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;
     font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);
-    border-left:2px solid rgba(255,138,30,.20);transition:.18s;
+    border-left:2px solid rgba(45,168,255,.20);transition:.18s;
   }
-  .rrow:hover{background:rgba(255,138,30,.07);}
+  .rrow:hover{background:rgba(45,168,255,.07);}
   .rrow .dot{width:7px;height:7px;flex:0 0 7px;}
-  .rrow.focus{background:rgba(255,138,30,.13);color:var(--hot);}
+  .rrow.focus{background:rgba(45,168,255,.13);color:var(--hot);}
   .rrow .st{margin-left:auto;font-size:9px;opacity:.8;}
   .rrow.busy .st{color:var(--gold);}
 
@@ -125,7 +125,7 @@
   .hit:focus-visible{outline:2px solid var(--gold);outline-offset:8px;}
   .mode{
     font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.36em;
-    text-transform:uppercase;color:var(--gold);text-shadow:0 0 16px rgba(255,160,50,.8);
+    text-transform:uppercase;color:var(--gold);text-shadow:0 0 16px rgba(80,190,255,.8);
     min-height:18px;margin-top:6px;
   }
 
@@ -137,7 +137,7 @@
   .tabs::-webkit-scrollbar{display:none;}
   .tab{flex:0 0 auto;}
   .tab{
-    border:1px solid rgba(255,138,30,.26);background:transparent;cursor:pointer;
+    border:1px solid rgba(45,168,255,.26);background:transparent;cursor:pointer;
     font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
     padding:3px 7px;color:var(--dim);transition:.15s;
   }
@@ -146,12 +146,12 @@
   .feed{flex:1 1 auto;min-height:0;overflow-y:auto;font-size:14px;line-height:1.62;scrollbar-width:thin;scrollbar-color:var(--edge) transparent;}
   .feed::-webkit-scrollbar{width:7px;}
   .feed::-webkit-scrollbar-thumb{background:var(--edge);}
-  .empty{color:#E3C39A;font-size:14px;line-height:1.7;}
+  .empty{color:#BFE2FF;font-size:14px;line-height:1.7;}
   .turn{margin-bottom:15px;}
   .who{font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:4px;}
   .turn.you .who{color:var(--dim);}
-  .turn.you .msg{color:#C29A70;}
-  .turn.sys .msg{color:#FFF0DA;}
+  .turn.you .msg{color:#8FB6D9;}
+  .turn.sys .msg{color:#EAF7FF;}
   .turn.err .who,.turn.err .msg{color:var(--red);}
   .msg{white-space:pre-wrap;word-wrap:break-word;}
   .cursor{display:inline-block;width:7px;height:14px;background:var(--gold);vertical-align:-2px;margin-left:2px;box-shadow:0 0 9px var(--gold);animation:bl .9s steps(1) infinite;}
@@ -165,21 +165,21 @@
   }
   .caret{color:var(--amber);text-shadow:0 0 12px var(--amber);}
   .cmd input{flex:1 1 auto;min-width:0;background:transparent;border:0;outline:0;color:var(--hot);font-family:var(--mono);font-size:15px;padding:13px 0;}
-  .cmd input::placeholder{color:#7A5432;}
+  .cmd input::placeholder{color:#3E6A8F;}
   .target{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);white-space:nowrap;}
 
   .keybar{grid-column:1/4;display:none;gap:10px;align-items:center;border:1px solid var(--edge);background:var(--pane);padding:9px 12px;}
   .keybar.open{display:flex;}
   .keybar label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);}
   .keybar input{flex:1 1 auto;min-width:0;background:transparent;border:0;outline:0;color:var(--hot);font-family:var(--mono);font-size:13px;}
-  .keybar input::placeholder{color:#7A5432;}
+  .keybar input::placeholder{color:#3E6A8F;}
   .keybar span{font-size:11px;color:var(--dim);}
 
   /* live caption over the core */
   .caption{
     min-height:20px;margin-top:4px;max-width:min(92vw,640px);text-align:center;
     font-family:var(--mono);font-size:15px;line-height:1.4;color:var(--hot);
-    text-shadow:0 0 14px rgba(255,150,40,.55);
+    text-shadow:0 0 14px rgba(70,180,255,.55);
     opacity:0;transition:opacity .2s;
   }
   .caption.on{opacity:1;}
@@ -192,7 +192,7 @@
   }
   .nodestrip::-webkit-scrollbar{display:none;}
   .nodestrip button{
-    flex:0 0 auto;border:1px solid rgba(255,138,30,.28);background:rgba(26,13,4,.55);
+    flex:0 0 auto;border:1px solid rgba(45,168,255,.28);background:rgba(6,18,34,.55);
     font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
     padding:6px 10px;color:var(--dim);cursor:pointer;
   }
@@ -218,7 +218,7 @@
     .topbar,.cmd,.keybar{grid-column:1;}
     .left{display:none;}
     .nodestrip{display:flex;}
-    .pane{background:rgba(20,10,3,.80);}
+    .pane{background:rgba(4,14,28,.80);}
     .ticker{grid-column:1;font-size:9px;}
     .core{justify-content:center;padding-bottom:0;}
     .hit{width:min(26vh,200px);height:min(26vh,200px);}
@@ -329,8 +329,8 @@
 
 </div>
 
-<div id="help" style="display:none;position:fixed;inset:0;z-index:9;background:rgba(4,3,10,.88);cursor:pointer;overflow-y:auto;">
-  <div style="max-width:660px;margin:6vh auto;padding:22px 28px;border:1px solid var(--edge-hot);background:rgba(26,13,4,.95);font-size:15px;line-height:1.85;color:var(--txt);">
+<div id="help" style="display:none;position:fixed;inset:0;z-index:9;background:rgba(2,6,16,.88);cursor:pointer;overflow-y:auto;">
+  <div style="max-width:660px;margin:6vh auto;padding:22px 28px;border:1px solid var(--edge-hot);background:rgba(6,18,34,.95);font-size:15px;line-height:1.85;color:var(--txt);">
     <h2 class="ph" style="font-size:13px;">How to use Tebow</h2>
     <p style="margin:0 0 10px;"><b style="color:var(--gold);">First time here:</b> click <b>KEY</b> in the top bar and paste your API key. Without it, nothing can answer.</p>
     <p style="margin:0 0 10px;"><b style="color:var(--gold);">Talk:</b> tap the orb's center and speak. Pause when you're done — it sends itself and answers out loud. Tap again to turn the mic off.</p>
@@ -353,12 +353,12 @@
   /* Six parallel threads. Same Claude in each — they differ only by what
      you put in them. A thread names itself from its first message. */
   const SESSIONS = [
-    { rgb:[1.00,0.55,0.10] },
-    { rgb:[1.00,0.80,0.28] },
-    { rgb:[1.00,0.40,0.18] },
-    { rgb:[0.30,0.84,0.92] },
-    { rgb:[0.72,0.50,1.00] },
-    { rgb:[1.00,0.30,0.46] }
+    { rgb:[0.20,0.75,1.00] },
+    { rgb:[0.55,0.95,1.00] },
+    { rgb:[0.10,1.00,0.85] },
+    { rgb:[0.45,0.55,1.00] },
+    { rgb:[0.80,0.55,1.00] },
+    { rgb:[1.00,0.45,0.75] }
   ];
   const NN = SESSIONS.length;
   SESSIONS.forEach(function(s,i){
@@ -413,8 +413,8 @@
     const x=c.getContext("2d");
     const g=x.createRadialGradient(32,32,0,32,32,32);
     g.addColorStop(0,"rgba(255,255,255,1)");
-    g.addColorStop(0.25,"rgba(255,228,175,.85)");
-    g.addColorStop(1,"rgba(255,140,30,0)");
+    g.addColorStop(0.25,"rgba(175,228,255,.85)");
+    g.addColorStop(1,"rgba(30,140,255,0)");
     x.fillStyle=g;x.beginPath();x.arc(32,32,32,0,7);x.fill();
     return new THREE.CanvasTexture(c);
   }
@@ -495,7 +495,7 @@
     const pts=[];
     for(let a=0;a<=72;a++){const t=a/72*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(t)*R*1.03,Math.sin(t)*R*1.03,0));}
     const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({color:0xFF9A2E,transparent:true,opacity:0.14,blending:THREE.AdditiveBlending}));
+      new THREE.LineBasicMaterial({color:0x2E9AFF,transparent:true,opacity:0.14,blending:THREE.AdditiveBlending}));
     ln.rotation.y=m/8*Math.PI; ln.rotation.x=0.26;
     wires.add(ln);
   }
@@ -508,14 +508,31 @@
     return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({color:color,transparent:true,opacity:op,blending:THREE.AdditiveBlending}));
   }
-  const gyroA=hoop(R*1.16,0xFFB040,0.34);
-  const gyroB=hoop(R*1.30,0xFF8A1E,0.26);
+  const gyroA=hoop(R*1.16,0x40B0FF,0.34);
+  const gyroB=hoop(R*1.30,0x1E8AFF,0.26);
   scene.add(gyroA); scene.add(gyroB);
 
+  /* ── reticle — flat targeting rings that always face the camera,
+     echoing the arc-reactor HUD look ── */
+  const reticle=new THREE.Group();
+  reticle.add(hoop(R*1.42,0x39C2FF,0.20));
+  reticle.add(hoop(R*1.58,0x1E8AFF,0.13));
+  (function(){
+    const pts=[];
+    for(let i=0;i<48;i++){
+      const a=i/48*TAU, r1=R*1.46, r2=R*1.54;
+      pts.push(new THREE.Vector3(Math.cos(a)*r1,Math.sin(a)*r1,0));
+      pts.push(new THREE.Vector3(Math.cos(a)*r2,Math.sin(a)*r2,0));
+    }
+    reticle.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:0x7FD4FF,transparent:true,opacity:0.16,blending:THREE.AdditiveBlending})));
+  })();
+  scene.add(reticle);
+
   /* ── core glow ── */
-  const coreMat=new THREE.SpriteMaterial({map:tex,color:0xFFF0CC,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
+  const coreMat=new THREE.SpriteMaterial({map:tex,color:0xCCF0FF,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
   const coreS=new THREE.Sprite(coreMat); coreS.scale.set(2.2,2.2,1); scene.add(coreS);
-  const haloMat=new THREE.SpriteMaterial({map:tex,color:0xFF7A12,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false});
+  const haloMat=new THREE.SpriteMaterial({map:tex,color:0x127AFF,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false});
   const halo=new THREE.Sprite(haloMat); halo.scale.set(6.4,6.4,1); scene.add(halo);
 
   /* ── starfield ── */
@@ -527,7 +544,7 @@
   const sg=new THREE.BufferGeometry();
   sg.setAttribute("position",new THREE.BufferAttribute(spos,3));
   scene.add(new THREE.Points(sg,new THREE.PointsMaterial({
-    size:0.10,map:tex,color:0xFFB25E,transparent:true,opacity:.5,
+    size:0.10,map:tex,color:0x5EB2FF,transparent:true,opacity:.5,
     blending:THREE.AdditiveBlending,depthWrite:false})));
 
   let t=0;
@@ -562,9 +579,9 @@
       const e=Math.min(1,b*1.55+0.12);
       const f=0.30+e*0.95+cseed[i]*0.12;
       const mix=Math.min(1,0.70+(S.focusE||0)*0.18+S.pulse*0.12);
-      ccol[k]  =lerp(1.0*f,          S.rgb[0]*f*1.45, mix);
-      ccol[k+1]=lerp((0.42+e*0.46)*f,S.rgb[1]*f*1.45, mix);
-      ccol[k+2]=lerp((0.06+e*0.55)*f,S.rgb[2]*f*1.45, mix);
+      ccol[k]  =lerp((0.10+e*0.55)*f,S.rgb[0]*f*1.45, mix);
+      ccol[k+1]=lerp((0.55+e*0.40)*f,S.rgb[1]*f*1.45, mix);
+      ccol[k+2]=lerp(1.0*f,          S.rgb[2]*f*1.45, mix);
     }
     cgeo.attributes.position.needsUpdate=true;
     cgeo.attributes.color.needsUpdate=true;
@@ -574,7 +591,7 @@
       const b=bins[dbin[i]], a=da[i]+t*0.15, r=dr[i]*(1+b*0.20), k=i*3;
       dpos[k]=Math.cos(a)*r; dpos[k+1]=Math.sin(a)*r; dpos[k+2]=0;
       const e=Math.min(1,0.16+b*1.2);
-      dcol[k]=e; dcol[k+1]=(0.46+b*0.42)*e; dcol[k+2]=(0.08+b*0.5)*e;
+      dcol[k]=(0.08+b*0.5)*e; dcol[k+1]=(0.46+b*0.42)*e; dcol[k+2]=e;
     }
     dgeo.attributes.position.needsUpdate=true;
     dgeo.attributes.color.needsUpdate=true;
@@ -593,6 +610,8 @@
 
     gyroA.rotation.x=t*0.42; gyroA.rotation.y=t*0.31;
     gyroB.rotation.x=-t*0.27; gyroB.rotation.z=t*0.36;
+    reticle.quaternion.copy(cam.quaternion);
+    reticle.rotateZ(t*0.05);
 
     const beat=1+mean*0.72+Math.sin(t*1.5)*0.05;
     coreS.scale.set(2.25*beat,2.25*beat,1);
@@ -791,10 +810,10 @@
       const py=c.height-6-((v-lo)/rng)*(c.height-14);
       if(i===0) x.moveTo(px,py); else x.lineTo(px,py);
     });
-    x.strokeStyle="#FF9A2E"; x.lineWidth=2; x.stroke();
+    x.strokeStyle="#2E9AFF"; x.lineWidth=2; x.stroke();
     x.lineTo(c.width,c.height); x.lineTo(0,c.height); x.closePath();
     const g=x.createLinearGradient(0,0,0,c.height);
-    g.addColorStop(0,"rgba(255,154,46,.34)"); g.addColorStop(1,"rgba(255,154,46,0)");
+    g.addColorStop(0,"rgba(46,154,255,.34)"); g.addColorStop(1,"rgba(46,154,255,0)");
     x.fillStyle=g; x.fill();
   }
 
