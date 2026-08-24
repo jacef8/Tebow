@@ -95,6 +95,12 @@
     width:76px;text-align:right;padding:0;
   }
   .rd input::placeholder{color:#3E6A8F;}
+  .rd select{
+    background:transparent;border:0;border-bottom:1px solid rgba(45,168,255,.25);
+    color:var(--accent2);font-family:var(--mono);font-size:12px;
+    max-width:150px;outline:0;cursor:pointer;
+  }
+  .rd select option{background:#041022;color:var(--txt);}
 
   /* bottom ticker */
   .ticker{
@@ -281,7 +287,7 @@
       <div class="rd"><span>Network</span><b id="tNet">--</b></div>
       <div class="rd"><span>Uptime</span><b id="tUp">00:00</b></div>
       <div class="rd"><span>Last reply</span><b id="tLat">--</b></div>
-      <div class="rd"><span>Voice</span><b id="tVox">--</b></div>
+      <div class="rd"><span>Voice</span><select id="voiceSel"><option>loading…</option></select></div>
     </div>
 
     <div class="pane" style="flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;min-height:84px;">
@@ -794,8 +800,6 @@
     const h=Math.floor(el/3600), m=Math.floor(el%3600/60), sec=el%60;
     $("tUp").textContent = (h? h+"h ":"")+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
     $("tLat").textContent = lastLat==null ? "--" : (lastLat/1000).toFixed(1)+"s";
-    const v=SESSIONS[focusIdx].voice;
-    $("tVox").textContent = v ? v.name.replace(/^(Microsoft|Google)\s+/,"").slice(0,16) : "default";
   }
   setInterval(sess,1000);
 
@@ -1105,31 +1109,54 @@
   /* ══════════ speech out ══════════ */
   let speakOn=true, speaking=false;
 
-  /* Rank installed voices — the browser default is usually the worst one.
-     Prefer natural/neural engines, then well-known quality names. */
+  /* Rank installed voices — aim for Jarvis: a natural, neural, British
+     male voice first (Edge's "Ryan Online (Natural)" is the prize),
+     then any natural voice, then the usual suspects. */
   function rankVoice(v){
-    const n=(v.name||"").toLowerCase();
+    const n=(v.name||"").toLowerCase(), lg=(v.lang||"").toLowerCase();
     let r=0;
-    if(/natural|neural|enhanced|premium|siri/.test(n)) r+=60;
-    if(/google/.test(n)) r+=40;
-    if(/samantha|daniel|karen|moira|serena|alex|tessa|aaron|nicky/.test(n)) r+=25;
-    if(/microsoft/.test(n)) r+=15;
-    if(v.localService) r+=5;
+    if(/natural|neural|enhanced|premium|siri/.test(n)) r+=80;
+    if(/en-gb/.test(lg)) r+=30;
+    if(/ryan/.test(n)) r+=40;
+    if(/thomas|george|oliver|alfie|brian|guy|daniel/.test(n)) r+=18;
+    if(/google/.test(n)) r+=25;
+    if(/microsoft/.test(n)) r+=10;
+    if(v.localService) r+=3;
+    if(/multiling/.test(n)) r-=15;   /* multilingual voices drift accents */
     if(/compact|espeak|novelty|whisper|bells|bubbles|zarvox|trinoids/.test(n)) r-=80;
     return r;
   }
-  let VOICES=[];
+  let VOICES=[], chosenName=null;
+  const voiceSel=$("voiceSel");
+  function setVoice(v){
+    SESSIONS.forEach(function(s){ s.voice=v; });
+  }
   function loadVoices(){
     if(!window.speechSynthesis) return;
     const all=speechSynthesis.getVoices().filter(function(v){ return /^en/i.test(v.lang); });
     if(!all.length) return;
     VOICES=all.slice().sort(function(a,b){ return rankVoice(b)-rankVoice(a); });
-    /* one voice, the best the device has — threads are threads, not characters */
-    SESSIONS.forEach(function(s){ s.voice = VOICES[0]; });
+    voiceSel.innerHTML="";
+    VOICES.slice(0,14).forEach(function(v){
+      const o=document.createElement("option");
+      o.value=v.name;
+      o.textContent=v.name.replace(/^Microsoft |^Google /,"").replace(/ Online \(Natural\)/," ✦").slice(0,26);
+      voiceSel.appendChild(o);
+    });
+    const pick=VOICES.find(function(v){ return v.name===chosenName; })||VOICES[0];
+    voiceSel.value=pick.name;
+    setVoice(pick);
   }
+  voiceSel.addEventListener("change",function(){
+    chosenName=this.value;
+    const v=VOICES.find(function(x){ return x.name===chosenName; });
+    if(v){ setVoice(v); stopSpeaking(); speak("At your service."); }
+  });
   if(window.speechSynthesis){
     loadVoices();
     speechSynthesis.onvoiceschanged=loadVoices;
+  } else {
+    voiceSel.innerHTML="<option>unavailable</option>";
   }
 
   voiceBtn.addEventListener("click",function(){
@@ -1147,8 +1174,8 @@
     const u=new SpeechSynthesisUtterance(txt);
     const s = sess || SESSIONS[focusIdx];
     if(s && s.voice) u.voice=s.voice;
-    u.rate  = 1.04;
-    u.pitch = 0.95;
+    u.rate  = 1.0;    /* measured, unhurried */
+    u.pitch = 0.92;
     let env=null;
     u.onstart=function(){
       speaking=true;
