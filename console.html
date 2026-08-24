@@ -103,6 +103,19 @@
   .stat{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);}
   .stat b{color:#FFF;font-weight:500;}
 
+  .topbar{position:relative;}
+  .menupanel{
+    position:absolute;top:calc(100% + 8px);right:10px;z-index:30;
+    display:none;flex-direction:column;gap:10px;padding:13px 15px;
+    border-radius:var(--r);min-width:min(320px,92vw);
+    background:linear-gradient(158deg,var(--e2-hi),var(--e2));
+    border:1px solid rgba(255,255,255,.09);box-shadow:var(--raise);
+  }
+  .menupanel.open{display:flex;}
+  .mitem{display:flex;align-items:center;gap:11px;}
+  .mitem .chip{flex:0 0 86px;text-align:center;}
+  .mitem span{font-family:var(--body);font-size:12.5px;color:var(--dim);line-height:1.35;}
+
   .left{display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto;scrollbar-width:none;}
   .left::-webkit-scrollbar{display:none;}
 
@@ -303,13 +316,16 @@
       <span class="stat">USER <b>FORD</b></span>
       <span class="stat" id="clock">--:--:--</span>
       <button class="chip cast" id="broadcast">Ask all</button>
-      <button class="chip" id="live" aria-pressed="false">Live</button>
-      <button class="chip" id="wake" aria-pressed="false">Wake</button>
-      <button class="chip" id="voice" aria-pressed="true">Voice</button>
-      <button class="chip" id="keyBtn">Key</button>
-      <button class="chip" id="purge">Purge</button>
       <button class="chip" id="helpBtn">Help</button>
       <a class="chip" href="https://claude.ai/code/artifact/a447e48d-ca6e-4953-86a1-84eaefa3fe0c" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">Hub ↗</a>
+      <button class="chip" id="menuBtn" aria-expanded="false">☰ Menu</button>
+    </div>
+    <div class="menupanel" id="menuPanel">
+      <div class="mitem"><button class="chip" id="live" aria-pressed="false">Live</button><span>Hands-free — the mic reopens after every answer</span></div>
+      <div class="mitem"><button class="chip" id="wake" aria-pressed="false">Wake</button><span>Hands-free, but only obeys after "hey Tebow"</span></div>
+      <div class="mitem"><button class="chip" id="voice" aria-pressed="true">Voice</button><span>Answers are spoken aloud — click to mute</span></div>
+      <div class="mitem"><button class="chip" id="keyBtn">Key</button><span>Paste your API key for this visit</span></div>
+      <div class="mitem"><button class="chip" id="purge">Purge</button><span>Erase all six chats and start fresh</span></div>
     </div>
   </div>
 
@@ -799,6 +815,20 @@
   keyBtn.addEventListener("click",function(){
     keybar.classList.toggle("open");
     if(keybar.classList.contains("open")) keyInput.focus();
+  });
+
+  const menuPanel=$("menuPanel"), menuBtn=$("menuBtn");
+  menuBtn.addEventListener("click",function(e){
+    e.stopPropagation();
+    const open=!menuPanel.classList.contains("open");
+    menuPanel.classList.toggle("open",open);
+    menuBtn.setAttribute("aria-expanded",String(open));
+  });
+  document.addEventListener("click",function(e){
+    if(!e.target.closest(".menupanel") && !e.target.closest("#menuBtn")){
+      menuPanel.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded","false");
+    }
   });
 
   $("helpBtn").addEventListener("click",function(){ $("help").style.display="block"; });
@@ -1391,6 +1421,13 @@
   async function submit(broadcast){
     const txt=input.value.trim();
     if(!txt) return;
+    if(!API_KEY){
+      /* no key yet — open the key bar and say so, keep their question */
+      keybar.classList.add("open"); keyInput.focus();
+      setMode("idle","NO KEY — PASTE IT ABOVE");
+      speak("I need your A P I key first. Paste it in the bar that just opened, then ask me again.");
+      return;
+    }
     input.value="";
 
     const resume=function(){ if(liveMode&&!wantListen) startListen(); };
