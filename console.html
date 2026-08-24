@@ -422,11 +422,11 @@
      projects. Labels and context refreshed by the morning routine. */
   const BOUND = [
     { name:"TEBOW",       ctx:"the TEBOW voice console and daily hub project (GitHub repo jacef8/Tebow)" },
-    { name:"AMPLIFIERS",  ctx:"his session about amplifier options and image-generation pricing" },
-    { name:"VITAL STATS", ctx:"his vital-statistics website scrubber project" },
-    { name:"COOKBOOK",    ctx:"his Football Cookbook project" },
-    { name:"BISHOPRIC",   ctx:"his Bishopric project (GitHub repo jacef8/shepherds)" },
-    { name:"GROUNDLINK",  ctx:"his GroundLink project" }
+    { name:"AMPLIFIERS",  ctx:"the session about amplifier options and image-generation pricing" },
+    { name:"VITAL STATS", ctx:"the vital-statistics website scrubber project" },
+    { name:"COOKBOOK",    ctx:"the Football Cookbook project" },
+    { name:"BISHOPRIC",   ctx:"the Bishopric project (GitHub repo jacef8/shepherds)" },
+    { name:"GROUNDLINK",  ctx:"the GroundLink project" }
   ];
 
   SESSIONS.forEach(function(s,i){
@@ -746,7 +746,23 @@
   function render(){
     const s=SESSIONS[focusIdx];
     feed.innerHTML="";
-    if(!s.history.length && !s.busy){ feed.appendChild(empty); empty.style.display=""; return; }
+    if(!s.history.length && !s.busy){
+      if(!s.context){ feed.appendChild(empty); empty.style.display=""; return; }
+      /* per-chat welcome — each slice introduces its own project */
+      const d=document.createElement("div"); d.className="empty";
+      const h=document.createElement("div");
+      h.style.cssText="font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.06em;margin-bottom:10px;";
+      h.style.color=s.css; h.textContent=s.name;
+      const p1=document.createElement("p"); p1.style.margin="0 0 10px";
+      p1.textContent="A fresh conversation tied to "+s.context+".";
+      const p2=document.createElement("p"); p2.style.margin="0 0 10px";
+      p2.textContent="It knows what this project is — not what happened inside your other Claude sessions. Your first question starts this chat's own memory, and its slice of the orb grows as you use it.";
+      const p3=document.createElement("p"); p3.style.margin="0";
+      p3.innerHTML="Tap the orb and talk, or type below. Click another slice — or a name in the Chats list — to switch projects. <b>HELP</b> (top right) has the full guide.";
+      d.appendChild(h); d.appendChild(p1); d.appendChild(p2); d.appendChild(p3);
+      feed.appendChild(d);
+      return;
+    }
     s.history.forEach(function(m){
       const w=document.createElement("div");
       w.className="turn "+(m.role==="user"?"you":"sys");
