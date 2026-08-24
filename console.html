@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TEBOW</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05070C">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter+Tight:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -225,6 +229,15 @@
   .keybar input{flex:1 1 auto;min-width:0;background:var(--recess);border:0;border-radius:999px;box-shadow:var(--well-sh);outline:0;color:#FFF;font-family:var(--mono);font-size:12px;padding:7px 14px;}
   .keybar input::placeholder{color:rgba(255,255,255,.3);}
   .keybar span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;}
+  .keybar .remember{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+  .keybar .remember input{accent-color:var(--amber);width:14px;height:14px;cursor:pointer;}
+
+  .armveil{
+    position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    background:rgba(3,5,10,.82);backdrop-filter:blur(6px);cursor:pointer;
+  }
+  .armveil b{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:.24em;color:#FFF;text-shadow:0 0 30px rgba(57,194,255,.9);}
+  .armveil span{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
 
   /* live caption over the core */
   .caption{
@@ -333,7 +346,8 @@
     <label for="keyInput">API KEY</label>
     <input id="keyInput" type="password" autocomplete="off" placeholder="sk-ant-…  (paste it — it takes effect as you type)">
     <button class="chip" id="keyDone">Done</button>
-    <span>session only · never stored</span>
+    <label class="remember"><input type="checkbox" id="keyRemember"> remember on this device</label>
+    <span id="keyNote">session only · never stored</span>
   </div>
 
   <div class="nodestrip" id="nodestrip"></div>
@@ -413,6 +427,7 @@
     <p style="margin:0 0 10px;"><b style="color:var(--gold);">Right panel:</b> the conversation of the highlighted chat — what you said and what Tebow answered.</p>
     <p style="margin:0 0 10px;"><b style="color:var(--gold);">ASK ALL</b> sends one question to all six chats at once. <b style="color:var(--gold);">LIVE</b> keeps the mic open hands-free. <b style="color:var(--gold);">WAKE</b> is hands-free but only obeys after "hey Tebow". <b style="color:var(--gold);">VOICE</b> mutes the speech. <b style="color:var(--gold);">PURGE</b> erases all six chats.</p>
     <p style="margin:0 0 10px;"><b style="color:var(--gold);">Mic asking permission?</b> Click Allow. If it says MIC BLOCKED, click the padlock next to the web address, set Microphone to Allow, and reload the page.</p>
+    <p style="margin:0 0 10px;"><b style="color:var(--gold);">Tablet mode:</b> in KEY, check "remember on this device"; arm WAKE once. The screen stays awake while TEBOW is open, and after any restart one tap on the screen re-arms everything.</p>
     <p style="margin:10px 0 0;color:var(--dim);">Click anywhere to close.</p>
   </div>
 </div>
@@ -833,7 +848,22 @@
 
   $("helpBtn").addEventListener("click",function(){ $("help").style.display="block"; });
   $("help").addEventListener("click",function(){ $("help").style.display="none"; });
-  keyInput.addEventListener("input",function(){ API_KEY=keyInput.value.trim(); });
+  /* opt-in key memory for a dedicated device (tablet on the counter).
+     Unchecked (the default) keeps the original rule: nothing stored. */
+  const keyRem=$("keyRemember"), keyNote=$("keyNote");
+  function persistKey(){
+    try{
+      if(keyRem.checked && API_KEY) localStorage.setItem("tebowKey",API_KEY);
+      else localStorage.removeItem("tebowKey");
+    }catch(e){}
+    keyNote.textContent = keyRem.checked ? "saved on this device only" : "session only · never stored";
+  }
+  try{
+    const savedKey=localStorage.getItem("tebowKey");
+    if(savedKey){ API_KEY=savedKey; keyInput.value=savedKey; keyRem.checked=true; keyNote.textContent="saved on this device only"; }
+  }catch(e){}
+  keyRem.addEventListener("change",persistKey);
+  keyInput.addEventListener("input",function(){ API_KEY=keyInput.value.trim(); persistKey(); });
   function keyAccept(){
     keybar.classList.remove("open");
     if(API_KEY.length>20){
@@ -1226,9 +1256,37 @@
     wakeBtn.setAttribute("aria-pressed",String(wakeMode));
     awake=false;
     if(awakeTimer){ clearTimeout(awakeTimer); awakeTimer=null; }
+    try{ localStorage.setItem("tebowWake", wakeMode?"on":"off"); }catch(e){}
     if(wakeMode && !liveMode) liveBtn.click();
     else if(listening) setMode("listening", listenLabel());
   });
+
+  /* ── tablet / kiosk mode ──
+     Keep the screen awake while TEBOW is visible, and if Wake was armed
+     last time, offer one tap to re-arm everything after a restart
+     (browsers require a touch before the mic and voice can start). */
+  let wlock=null;
+  async function keepAwake(){
+    try{ if("wakeLock" in navigator) wlock=await navigator.wakeLock.request("screen"); }catch(e){}
+  }
+  document.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="visible") keepAwake();
+  });
+  keepAwake();
+
+  try{
+    if(localStorage.getItem("tebowWake")==="on" && SR){
+      const veil=document.createElement("div");
+      veil.className="armveil";
+      veil.innerHTML="<b>TEB<i style='font-style:normal;color:var(--amber)'>O</i>W</b><span>tap anywhere to wake</span>";
+      document.body.appendChild(veil);
+      veil.addEventListener("click",function(){
+        veil.remove();
+        if(window.speechSynthesis){ try{ speechSynthesis.resume(); }catch(e){} }
+        if(!wakeMode) wakeBtn.click();
+      });
+    }
+  }catch(e){}
 
   /* ══════════ speech out ══════════ */
   let speakOn=true, speaking=false;
