@@ -690,7 +690,9 @@
     if(s.busy){
       const w=document.createElement("div"); w.className="turn sys";
       const h=document.createElement("div"); h.className="who"; h.style.color=s.css; h.textContent=s.name;
-      const b=document.createElement("div"); b.className="msg working"; b.textContent="receiving";
+      const b=document.createElement("div");
+      if(s.partial){ b.className="msg"; b.textContent=s.partial; }
+      else { b.className="msg working"; b.textContent="receiving"; }
       const c=document.createElement("span"); c.className="cursor"; c.style.background=s.css;
       b.appendChild(c);
       w.appendChild(h); w.appendChild(b); feed.appendChild(w);
@@ -975,8 +977,10 @@
 
     rec.onend=function(){
       listening=false;
-      if(wantListen){             /* browsers time the mic out — reopen it */
-        setTimeout(function(){ if(wantListen) startListen(); },180);
+      if(wantListen){             /* browsers time the mic out — reopen it.
+                                     In Wake mode wait longer between reopens
+                                     so the browser's listening chime is rarer */
+        setTimeout(function(){ if(wantListen) startListen(); }, wakeGated()?2800:300);
         return;
       }
       stopAmp();
@@ -1188,8 +1192,9 @@
   }
 
   async function ask(s, txt){
+    if(s.busy) return null;
     autoTitle(s, txt);
-    s.busy=true; s.error=null; s.t0=Date.now(); paintState();
+    s.busy=true; s.error=null; s.partial=""; s.t0=Date.now(); paintState();
     if(s===SESSIONS[focusIdx]) render();
     s.history.push({role:"user",content:txt});
     try{
@@ -1201,25 +1206,57 @@
       }
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:hd,
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:SYSTEM,messages:s.history})
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:SYSTEM,
+                             stream:true,messages:s.history})
       });
-      const data=await res.json();
-      const out=(data.content||[]).filter(function(b){return b.type==="text";})
-        .map(function(b){return b.text;}).join("\n").trim();
-      if(!out) throw new Error("empty");
+      if(!res.ok){
+        let msg="the service answered "+res.status;
+        try{
+          const j=await res.json();
+          if(j.error&&j.error.message) msg=j.error.message;
+        }catch(e2){}
+        throw new Error(msg);
+      }
+      /* stream the reply in as it is generated */
+      const reader=res.body.getReader(), dec=new TextDecoder();
+      let buf="", out="", lastPaint=0;
+      for(;;){
+        const chunk=await reader.read();
+        if(chunk.done) break;
+        buf+=dec.decode(chunk.value,{stream:true});
+        const lines=buf.split("\n"); buf=lines.pop();
+        for(const ln of lines){
+          if(!ln.startsWith("data:")) continue;
+          const dat=ln.slice(5).trim();
+          if(!dat) continue;
+          let ev=null;
+          try{ ev=JSON.parse(dat); }catch(e3){ continue; }
+          if(ev.type==="content_block_delta"&&ev.delta&&typeof ev.delta.text==="string"){
+            out+=ev.delta.text; s.partial=out;
+            const now=Date.now();
+            if(now-lastPaint>90&&s===SESSIONS[focusIdx]){ lastPaint=now; render(); }
+          }else if(ev.type==="error"){
+            throw new Error((ev.error&&ev.error.message)||"stream error");
+          }
+        }
+      }
+      out=out.trim();
+      if(!out) throw new Error("empty reply");
       s.history.push({role:"assistant",content:out});
       lastLat=Date.now()-s.t0;
       const wN=out.split(/\s+/).filter(Boolean).length;
       words+=wN; s.words+=wN;
       exchanges++;
-      s.busy=false; paintState();
+      s.busy=false; s.partial=""; paintState();
       if(s===SESSIONS[focusIdx]) render();
       return out;
     }catch(e){
       s.history.pop();
-      s.busy=false;
-      s.error = API_KEY ? "Transmission failed. Check the key and retry."
-                        : "Transmission failed. Running this outside Claude? Open KEY and paste an API key.";
+      s.busy=false; s.partial="";
+      const why=(e&&e.message)?e.message:"connection failed";
+      s.error = "Transmission failed — "+why+
+        (API_KEY ? "" : " (Running this outside Claude? Open KEY and paste an API key.)");
+      if(!input.value) input.value=txt;   /* don't make them retype it */
       paintState();
       if(s===SESSIONS[focusIdx]) render();
       return null;
