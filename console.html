@@ -311,10 +311,11 @@
           The orb is Tebow. Tap its center and talk — pause when you're
           done and it answers out loud. Or type in the bar below and
           press Enter.<br><br>
-          The orb is divided into six colored slices: six separate
-          chats, each with its own memory. Click a slice — or a name in
-          the Chats list — to switch. Questions go to the highlighted
-          chat, and a slice grows as its chat does more of the talking.
+          The orb is divided into six colored slices — six separate
+          chats, one for each of your recent Claude projects, each with
+          its own memory. Click a slice — or a name in the Chats list —
+          to switch. Questions go to the highlighted chat, and a slice
+          grows as its chat does more of the talking.
           <b>Ask all</b> asks all six at once.<br><br>
           <b>Wake</b> keeps the mic on hands-free, but Tebow only obeys
           after you say "hey Tebow".
@@ -367,11 +368,24 @@
     { rgb:[1.00,0.45,0.75] }
   ];
   const NN = SESSIONS.length;
+
+  /* The six chats are bound to the owner's six most recent Claude
+     projects. Labels and context refreshed by the morning routine. */
+  const BOUND = [
+    { name:"TEBOW",       ctx:"the TEBOW voice console and daily hub project (GitHub repo jacef8/Tebow)" },
+    { name:"AMPLIFIERS",  ctx:"his session about amplifier options and image-generation pricing" },
+    { name:"VITAL STATS", ctx:"his vital-statistics website scrubber project" },
+    { name:"COOKBOOK",    ctx:"his Football Cookbook project" },
+    { name:"BISHOPRIC",   ctx:"his Bishopric project (GitHub repo jacef8/shepherds)" },
+    { name:"GROUNDLINK",  ctx:"his GroundLink project" }
+  ];
+
   SESSIONS.forEach(function(s,i){
     s.history=[]; s.state="idle"; s.busy=false; s.el=null; s.words=0;
     s.num = String(i+1).padStart(2,"0");
-    s.name = "CHAT "+s.num;
-    s.titled = false;
+    s.name = BOUND[i] ? BOUND[i].name : ("CHAT "+s.num);
+    s.context = BOUND[i] ? BOUND[i].ctx : null;
+    s.titled = !!BOUND[i];
     s.orbR = 4.4 + (i%3)*0.85;
     s.orbI = -0.62 + i*0.24;
     s.orbP = (i/NN)*Math.PI*2;
@@ -1233,7 +1247,11 @@
       }
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",headers:hd,
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:SYSTEM,
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+                             system:SYSTEM+(s.context
+                               ? " This particular chat is dedicated to the owner's project: "+s.context+
+                                 ". When a question is ambiguous, assume it concerns that project."
+                               : ""),
                              stream:true,messages:s.history})
       });
       if(!res.ok){
