@@ -1405,9 +1405,11 @@
   }
 
   /* Say the name as TEE-bow. Spoken only — the written name is untouched.
-     "Tebow" trips most voices into "TEB-oh", so respell it for the engine. */
+     "Tebow" trips most voices into "TEB-oh". "Teebow" fixes the vowel but
+     the engine reads the real word "bow" as a second word and pauses, so
+     end on "bo": no English word, one smooth TEE-boh. */
   function sayable(txt){
-    return String(txt).replace(/\bT[eé]bow\b/gi, "Teebow");
+    return String(txt).replace(/\bT[eé]bow\b/gi, "Teebo");
   }
 
   function speak(txt, sess, done){
