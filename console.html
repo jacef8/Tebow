@@ -336,6 +336,7 @@
     <div class="chips">
       <span class="stat">USER <b>FORD</b></span>
       <span class="stat" id="clock">--:--:--</span>
+      <button class="chip" id="listenChip" aria-pressed="false">🎤 Listen</button>
       <button class="chip cast" id="broadcast">Ask all</button>
       <button class="chip" id="helpBtn">Help</button>
       <a class="chip" href="https://claude.ai/code/artifact/a447e48d-ca6e-4953-86a1-84eaefa3fe0c" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">Hub ↗</a>
@@ -1265,9 +1266,37 @@
     awake=false;
     if(awakeTimer){ clearTimeout(awakeTimer); awakeTimer=null; }
     try{ localStorage.setItem("tebowWake", wakeMode?"on":"off"); }catch(e){}
+    syncListenChip();
     if(wakeMode && !liveMode) liveBtn.click();
     else if(listening) setMode("listening", listenLabel());
   });
+
+  /* The same control, kept in the top bar where it can always be found —
+     the menu is no place for the one switch that decides whether the
+     thing hears you at all. Mirrors Wake in both directions. */
+  const listenChip=$("listenChip");
+  function syncListenChip(){
+    /* The chip answers one question honestly: is the mic open? Wake can be
+       off while Live is still on, so track liveMode, not wakeMode. */
+    listenChip.setAttribute("aria-pressed", String(liveMode));
+    listenChip.textContent = liveMode ? "🎤 Listening" : "🎤 Listen";
+    listenChip.title = liveMode
+      ? (wakeMode ? "Listening for “hey Tebow” — click to close the mic"
+                  : "Mic is open to everything — click to close it")
+      : "Click to listen for “hey Tebow”";
+  }
+  listenChip.addEventListener("click", function(){
+    if(window.speechSynthesis){ try{ speechSynthesis.resume(); }catch(e){} }
+    if(liveMode){                    /* off means off — close the mic fully */
+      if(wakeMode) wakeBtn.click();
+      if(liveMode) liveBtn.click();
+    } else {
+      wakeBtn.click();               /* arms Wake, which opens Live too */
+    }
+    syncListenChip();
+  });
+  liveBtn.addEventListener("click", syncListenChip);
+  syncListenChip();
 
   /* ── tablet / kiosk mode ──
      Keep the screen awake while TEBOW is visible, and if Wake was armed
