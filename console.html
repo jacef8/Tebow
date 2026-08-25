@@ -497,7 +497,7 @@
 
   let mode="idle";
   let listening=false, liveMode=false, wantListen=false, bargeArmed=false;
-  let wakeMode=false, awake=false, awakeTimer=null;
+  let wakeMode=false, awake=false, awakeTimer=null, heardTimer=null;
   const NB=128;
   const bins=new Float32Array(NB), targ=new Float32Array(NB);
   for(let i=0;i<NB;i++) targ[i]=0.05;
@@ -1081,7 +1081,7 @@
       if(!stream){
         stream=await navigator.mediaDevices.getUserMedia({audio:true});
         const src=actx.createMediaStreamSource(stream);
-        anl=actx.createAnalyser(); anl.fftSize=1024; anl.smoothingTimeConstant=0.45;
+        anl=actx.createAnalyser(); anl.fftSize=1024; anl.smoothingTimeConstant=0.82;
         src.connect(anl); freq=new Uint8Array(anl.frequencyBinCount);
       }
       if(timer) clearInterval(timer);
@@ -1090,7 +1090,10 @@
         for(let i=0;i<NB;i++){
           const m=i<NB/2?i:(NB-i);
           const b=Math.floor((m/(NB/2))*160);
-          targ[i]=Math.min(1,Math.pow(freq[b]/255,1.25)*1.7);
+          /* floor out room tone, then compress: the orb should breathe with
+             a voice, not flinch at a closing drawer */
+          const lvl=Math.max(0, freq[b]/255 - 0.18)/0.82;
+          targ[i]=Math.min(0.55, Math.pow(lvl,1.9)*0.85);
         }
       },33);
     }catch(e){}
@@ -1106,7 +1109,15 @@
   /* ── wake phrase: "hey Tebow" ──
      With Wake armed the open mic obeys nothing until it hears the
      phrase. Spellings cover what speech recognition tends to write. */
-  const WAKE_RE=/(?:\b(?:hey|hay|ok|okay|yo)[\s,]+)?\b(?:tebow|tebo|teebo|teebow|tibo|tee\s?bow?|t\s?bow)\b[\s,.!?]*/i;
+  /* What the recognizer actually types when someone says "hey Tebow" varies
+     a lot — it is not a common word, so engines reach for whatever is close.
+     Two tiers: names close enough to stand alone, and looser near-misses
+     that only count when a greeting came first, so a stray "depot" in
+     conversation cannot trigger it. */
+  const NAME_STRICT = "tebow|tebo|teebo|teebow|tibow|te[ae]\\s?bows?|te[ae]\\s?bo|t[\\s-]?bow|t[\\s-]?bo";
+  const NAME_LOOSE  = NAME_STRICT + "|tivo|teabag|tebo+w?|thibault|thibaut|tabu|taboo|debo|debow|depot|nebo|typo|tempo|tehbo|deebo";
+  const GREET = "(?:hey|hay|hi|ok|okay|yo|a?y?o)";
+  const WAKE_RE  = new RegExp("(?:\\b"+GREET+"[\\s,]+)\\b(?:"+NAME_LOOSE+")\\b[\\s,.!?]*|\\b(?:"+NAME_STRICT+")\\b[\\s,.!?]*", "i");
   function wakeStrip(txt){
     const m=txt.match(WAKE_RE);
     if(!m) return {hit:false, rest:txt};
@@ -1147,7 +1158,7 @@
       if(wantListen){             /* browsers time the mic out — reopen it.
                                      In Wake mode wait longer between reopens
                                      so the browser's listening chime is rarer */
-        setTimeout(function(){ if(wantListen) startListen(); }, wakeGated()?2800:300);
+        setTimeout(function(){ if(wantListen) startListen(); }, 250);
         return;
       }
       stopAmp();
@@ -1187,7 +1198,15 @@
         let cmd=finalTxt.trim();
         if(wakeGated() && !awake){
           const w=wakeStrip(cmd);
-          if(!w.hit){ caption(""); return; }   /* not for us — drop it */
+          if(!w.hit){                          /* not for us — but say what
+                                                  was heard, so a wake phrase
+                                                  that keeps missing can be
+                                                  seen rather than guessed at */
+            caption("heard: “"+cmd+"”", true);
+            clearTimeout(heardTimer);
+            heardTimer=setTimeout(function(){ caption(""); },2500);
+            return;
+          }
           cmd=w.rest.trim();
           if(!cmd){                            /* bare "hey Tebow" — wait for the ask */
             awake=true;
