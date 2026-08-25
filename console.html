@@ -454,6 +454,18 @@
 (function(){
   let API_KEY = "";   /* paste a key here to run this file outside Claude */
 
+  /* The gateway holds the API key and the day's brief on a server, so this
+     public page never has to. Empty until one is deployed, and everything
+     below keeps working on a pasted key in the meantime. */
+  const GATEWAY = "";
+  /* Replaced with a real sign-in once the gateway exists. */
+  async function gatewayToken(){
+    try{
+      if(window.tebowAuth && window.tebowAuth.token) return await window.tebowAuth.token();
+    }catch(e){}
+    return null;
+  }
+
   /* ══════════ SESSIONS ══════════ */
   const SYSTEM = "You are a capable general-purpose assistant speaking through a voice console. Answers are often read aloud, so write for the ear: short sentences, no bullet lists, no markdown, no headers. Be direct and concrete — skip preamble and filler. Default to two or three sentences and go longer only when the substance truly needs it. Use plain language over jargon; define any unavoidable term in the same breath. Say plainly when something is uncertain.";
 
@@ -1523,21 +1535,31 @@
     if(s===SESSIONS[focusIdx]) render();
     s.history.push({role:"user",content:txt});
     try{
-      const hd={"Content-Type":"application/json"};
-      if(API_KEY){
-        hd["x-api-key"]=API_KEY;
-        hd["anthropic-version"]="2023-06-01";
-        hd["anthropic-dangerous-direct-browser-access"]="true";
+      const sys=SYSTEM+(s.context
+        ? " This particular chat is dedicated to the owner's project: "+s.context+
+          ". When a question is ambiguous, assume it concerns that project."
+        : "");
+      const body=JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+                                 system:sys,stream:true,messages:s.history});
+
+      /* Two ways to reach Claude. If a gateway is configured, go through it:
+         it holds the key and knows the day's brief, so nothing private ever
+         sits in this page. Otherwise fall back to a key pasted here. */
+      let res;
+      if(GATEWAY){
+        const hd={"Content-Type":"application/json"};
+        const tok=await gatewayToken();
+        if(tok) hd["Authorization"]="Bearer "+tok;
+        res=await fetch(GATEWAY.replace(/\/+$/,"")+"/ask",{method:"POST",headers:hd,body:body});
+      } else {
+        const hd={"Content-Type":"application/json"};
+        if(API_KEY){
+          hd["x-api-key"]=API_KEY;
+          hd["anthropic-version"]="2023-06-01";
+          hd["anthropic-dangerous-direct-browser-access"]="true";
+        }
+        res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:hd,body:body});
       }
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:hd,
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
-                             system:SYSTEM+(s.context
-                               ? " This particular chat is dedicated to the owner's project: "+s.context+
-                                 ". When a question is ambiguous, assume it concerns that project."
-                               : ""),
-                             stream:true,messages:s.history})
-      });
       if(!res.ok){
         let msg="the service answered "+res.status;
         try{
