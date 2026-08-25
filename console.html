@@ -1079,7 +1079,9 @@
       if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
       if(actx.state==="suspended") await actx.resume();
       if(!stream){
-        stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        stream=await navigator.mediaDevices.getUserMedia({audio:{
+          echoCancellation:true, noiseSuppression:true, autoGainControl:true
+        }});
         const src=actx.createMediaStreamSource(stream);
         anl=actx.createAnalyser(); anl.fftSize=1024; anl.smoothingTimeConstant=0.82;
         src.connect(anl); freq=new Uint8Array(anl.frequencyBinCount);
@@ -1186,7 +1188,8 @@
       /* barge-in: the moment you speak over an answer, it stops talking —
          unless Wake is armed, in which case only the wake phrase interrupts */
       if(speaking && (interim.trim().length>1 || finalTxt.trim())){
-        if(!wakeGated() || wakeStrip(interim+" "+finalTxt).hit){
+        const heard=interim+" "+finalTxt;
+        if(!isEcho(heard) && (!wakeGated() || wakeStrip(heard).hit)){
           stopSpeaking();
           setMode("listening", listenLabel());
         }
@@ -1196,6 +1199,7 @@
 
       if(finalTxt.trim()){
         let cmd=finalTxt.trim();
+        if(isEcho(cmd)){ caption(""); return; }   /* its own voice, coming back */
         if(wakeGated() && !awake){
           const w=wakeStrip(cmd);
           if(!w.hit){                          /* not for us — but say what
@@ -1362,6 +1366,21 @@
 
   /* ══════════ speech out ══════════ */
   let speakOn=true, speaking=false;
+  /* On a tablet the microphone hears the speaker. Without this the tool
+     hears itself say its own name, treats that as the wake phrase, and
+     cuts itself off mid-sentence. Remember what is being said and refuse
+     to act on anything that is merely an echo of it. */
+  let echoText="", echoUntil=0;
+  function isEcho(txt){
+    const t=String(txt).toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+    if(!t) return true;
+    if(!speaking && Date.now()>echoUntil) return false;
+    const words=t.split(" ").filter(function(w){ return w.length>2; });
+    if(!words.length) return true;                 /* "uh", "hey" alone — treat as noise */
+    let seen=0;
+    for(const w of words) if(echoText.indexOf(w)!==-1) seen++;
+    return seen/words.length >= 0.5;               /* half its own words back = echo */
+  }
 
   /* Rank installed voices — aim for Jarvis: a natural, neural, British
      male voice first (Edge's "Ryan Online (Natural)" is the prize),
@@ -1433,7 +1452,9 @@
 
   function speak(txt, sess, done){
     if(!speakOn||!window.speechSynthesis){ setMode("idle","STANDBY"); done&&done(); return; }
-    const u=new SpeechSynthesisUtterance(sayable(txt));
+    const said=sayable(txt);
+    echoText=(echoText+" "+said).slice(-1200).toLowerCase();
+    const u=new SpeechSynthesisUtterance(said);
     const s = sess || SESSIONS[focusIdx];
     if(s && s.voice) u.voice=s.voice;
     u.rate  = 1.0;    /* measured, unhurried */
@@ -1455,6 +1476,7 @@
     const fin=function(){
       if(env)clearInterval(env);
       env=null; speaking=false;
+      echoUntil=Date.now()+900;      /* speakers keep ringing after the words end */
       for(let i=0;i<NB;i++) targ[i]=0.05;
       setMode("idle","STANDBY");
       done&&done();
