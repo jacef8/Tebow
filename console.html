@@ -238,6 +238,14 @@
   }
   .armveil b{font-family:var(--disp);font-weight:800;font-size:26px;letter-spacing:.24em;color:#FFF;text-shadow:0 0 30px rgba(57,194,255,.9);}
   .armveil span{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
+  .armveil .big{font-family:var(--body);font-size:17px;letter-spacing:0;text-transform:none;color:#FFF;text-align:center;max-width:min(88vw,420px);line-height:1.45;}
+  .armveil .big i{font-style:normal;color:var(--gold);}
+  .armveil .skip{
+    margin-top:4px;border:0;border-radius:var(--r-s);cursor:pointer;padding:9px 16px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    background:linear-gradient(160deg,var(--e2-hi),var(--e2));box-shadow:var(--raise);
+  }
+  .armveil .skip:hover{color:#FFF;}
 
   /* live caption over the core */
   .caption{
@@ -1274,16 +1282,32 @@
   });
   keepAwake();
 
+  /* Browsers refuse to open the microphone until the page has been touched
+     once, so there is no way around a single tap after every load. Rather
+     than leaving the mic closed and hoping the owner finds the WAKE button,
+     ask for that one tap up front — after it, the mic stays open and
+     reopens itself, and he never taps again until the page reloads. */
   try{
-    if(localStorage.getItem("tebowWake")==="on" && SR){
+    if(SR){
       const veil=document.createElement("div");
       veil.className="armveil";
-      veil.innerHTML="<b>TEB<i style='font-style:normal;color:var(--amber)'>O</i>W</b><span>tap anywhere to wake</span>";
+      veil.innerHTML=
+        "<b>TEB<i style='font-style:normal;color:var(--amber)'>O</i>W</b>"+
+        "<div class='big'>Tap anywhere to start listening.<br>Then just say <i>“hey Tebow”</i> — no need to touch it again.</div>"+
+        "<span>one tap per visit · your browser requires it</span>"+
+        "<button class='skip' type='button'>just type instead</button>";
       document.body.appendChild(veil);
-      veil.addEventListener("click",function(){
+
+      const arm=function(){
         veil.remove();
         if(window.speechSynthesis){ try{ speechSynthesis.resume(); }catch(e){} }
-        if(!wakeMode) wakeBtn.click();
+        if(!wakeMode) wakeBtn.click();   /* arms Wake, which opens Live too */
+      };
+      veil.addEventListener("click",arm);
+      veil.querySelector(".skip").addEventListener("click",function(e){
+        e.stopPropagation();             /* dismiss without opening the mic */
+        veil.remove();
+        input.focus();
       });
     }
   }catch(e){}
