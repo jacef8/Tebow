@@ -1351,9 +1351,15 @@
     speaking=false;
   }
 
+  /* Say the name as TEE-bow. Spoken only — the written name is untouched.
+     "Tebow" trips most voices into "TEB-oh", so respell it for the engine. */
+  function sayable(txt){
+    return String(txt).replace(/\bT[eé]bow\b/gi, "Teebow");
+  }
+
   function speak(txt, sess, done){
     if(!speakOn||!window.speechSynthesis){ setMode("idle","STANDBY"); done&&done(); return; }
-    const u=new SpeechSynthesisUtterance(txt);
+    const u=new SpeechSynthesisUtterance(sayable(txt));
     const s = sess || SESSIONS[focusIdx];
     if(s && s.voice) u.voice=s.voice;
     u.rate  = 1.0;    /* measured, unhurried */
